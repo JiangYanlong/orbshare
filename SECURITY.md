@@ -1,5 +1,9 @@
 # Security Policy
 
+[简体中文](#简体中文) · [English](#english)
+
+## 简体中文
+
 ## 支持范围
 
 当前仅对最新的 `main` 分支提供安全修复。项目仍在开发阶段，尚未承诺长期支持版本。
@@ -8,7 +12,7 @@
 
 请不要在公开 Issue 中披露可直接利用的漏洞、会议凭据或设备信息。
 
-在仓库启用 GitHub Private Vulnerability Reporting 后，请优先使用仓库的 **Security → Report a vulnerability** 页面。若该入口尚未启用，可先创建一个不包含利用细节的普通 Issue，请维护者提供私密联系方式。
+请使用仓库的 **Security → Report a vulnerability** 页面私密提交漏洞报告。
 
 报告建议包含：
 
@@ -21,3 +25,25 @@
 ## 安全边界
 
 OrbShare 主要面向可信局域网。会议密码可以降低误加入风险，但不能替代网络隔离、终端安全和操作系统权限控制。请勿将内置 HTTP 观看地址直接暴露到公网。
+
+## English
+
+### Supported versions
+
+Security fixes currently target only the latest `main` branch. OrbShare is still under active development and does not yet promise long-term support releases.
+
+### Reporting a vulnerability
+
+Do not disclose exploitable vulnerabilities, meeting credentials, or device information in a public Issue.
+
+Use **Security → Report a vulnerability** in this repository. A useful report includes:
+
+- Affected version or commit
+- Operating system, browser, and network environment
+- Minimal reproduction steps
+- Potential impact
+- A suggested fix, if available
+
+### Security boundary
+
+OrbShare is intended primarily for trusted local networks. Meeting passwords reduce accidental access but do not replace network isolation, endpoint security, or operating-system permission controls. Do not expose the built-in HTTP viewer directly to the public internet.

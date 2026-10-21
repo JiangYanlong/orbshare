@@ -1,5 +1,9 @@
 # Contributing to OrbShare
 
+[简体中文](#简体中文) · [English](#english)
+
+## 简体中文
+
 感谢你愿意改进 OrbShare。
 
 ## 开始之前
@@ -42,3 +46,48 @@ cargo test --workspace
 - 实际执行的测试命令
 - 仍需人工验证的场景
 - UI 变更前后的截图（如适用）
+
+## English
+
+Thank you for helping improve OrbShare.
+
+### Before you start
+
+1. Search existing Issues to avoid duplicate work.
+2. Open an Issue before a large change and describe the use case, platform, and acceptance criteria.
+3. Keep each pull request focused on one problem whenever possible.
+
+### Local verification
+
+Run at least:
+
+```bash
+npm ci
+npm run build
+cargo fmt --all --check
+cargo test --workspace
+```
+
+For macOS capture, audio, or packaging changes, also run:
+
+```bash
+./script/acceptance.sh
+```
+
+### Project conventions
+
+- Do not commit secrets, certificates, real meeting passwords, personal paths, or recordings.
+- Prefer the newest video frame in media send paths; do not accumulate stale frames.
+- Add both Chinese and English translations for user-visible text.
+- Add a regression test when fixing a reproducible defect.
+- Check both desktop and mobile layouts when changing the browser viewer.
+
+### Pull request description
+
+Include:
+
+- Why the change is needed and its user impact
+- Affected platforms and modules
+- Commands actually used for verification
+- Scenarios that still require manual validation
+- Before/after screenshots for UI changes, when applicable
