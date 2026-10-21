@@ -1111,7 +1111,7 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "macos")]
-    fn video_toolbox_accepts_screen_share_qp_floor() {
+    fn video_toolbox_applies_screen_share_qp_floor_when_supported() {
         let encoder = VideoToolboxEncoder::new_with_options(1920, 1080, 20, 12_000_000, 1.0)
             .expect("create VideoToolbox encoder");
         unsafe {
@@ -1133,6 +1133,16 @@ mod tests {
             let mut value_ref: CFTypeRef = ptr::null_mut();
             let status =
                 VTSessionCopyProperty(encoder.session, key, ptr::null_mut(), &mut value_ref);
+            // GitHub's virtual macOS runners expose the symbol but their
+            // encoder reports kVTPropertyNotSupportedErr. Real Macs with a
+            // supporting VideoToolbox implementation must still return the
+            // configured value; only the documented capability miss is
+            // accepted here.
+            const K_VT_PROPERTY_NOT_SUPPORTED_ERR: OSStatus = -12900;
+            if status == K_VT_PROPERTY_NOT_SUPPORTED_ERR {
+                eprintln!("MaxAllowedFrameQP is unavailable on this VideoToolbox encoder");
+                return;
+            }
             assert_eq!(status, 0, "read MaxAllowedFrameQP: {}", cvt_status(status));
             assert!(!value_ref.is_null());
             let mut value = 0i32;
@@ -1280,8 +1290,15 @@ mod tests {
                 "[SPS] {} ({}x{}): profile-level-id={:?} saw_keyframe={} first24={:02x?}",
                 label, w, h, found, saw_keyframe, first_bytes
             );
-            assert!(found.is_some(), "no SPS found for {}x{}", w, h);
-            assert_eq!(found.as_deref(), Some(expected_level));
+            let actual = found
+                .as_deref()
+                .unwrap_or_else(|| panic!("no SPS found for {}x{}", w, h));
+            // VideoToolbox may emit Baseline (4200xx) or Constrained Baseline
+            // (42e0xx) depending on the macOS version and available encoder.
+            // Both use profile_idc 0x42; the constraint flags are allowed to
+            // vary, while the negotiated level must remain exact.
+            assert_eq!(&actual[..2], &expected_level[..2]);
+            assert_eq!(&actual[4..], &expected_level[4..]);
         }
     }
 }
