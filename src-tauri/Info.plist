@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>OrbShare needs screen recording access to capture and share your screen over the LAN.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>OrbShare needs microphone access to capture audio during screen sharing.</string>
+</dict>
+</plist>

@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #0b0d12;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  -webkit-overflow-scrolling: auto;
+}
+
+* {
+  overscroll-behavior: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@keyframes orbshare-danmaku-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100vw - 100%));
+  }
+}
+
+.orbshare-danmaku-item {
+  position: absolute;
+  left: 100%;
+  width: max-content;
+  max-width: none;
+  animation-name: orbshare-danmaku-scroll;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  white-space: nowrap;
+  will-change: transform;
+  text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.9);
+}
+
+.orbshare-meeting-title {
+  width: 140px;
+}
+
+.orbshare-meeting-toolbar > button,
+.orbshare-meeting-toolbar > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+html[lang="en-US"] .orbshare-meeting-title {
+  width: 124px;
+}
+
+html[lang="en-US"] .orbshare-meeting-toolbar {
+  gap: 4px;
+}
+
+html[lang="en-US"] .orbshare-meeting-toolbar > button,
+html[lang="en-US"] .orbshare-meeting-toolbar > span {
+  padding-left: 7px;
+  padding-right: 7px;
+  font-size: 10.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbshare-danmaku-item {
+    animation-duration: 14s !important;
+  }
+}
+
+@media (max-width: 840px) {
+  .home-sidebar {
+    width: 188px;
+  }
+
+  .home-host-grid,
+  .home-join-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

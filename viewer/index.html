@@ -1,0 +1,2631 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <link rel="icon" href="/favicon.ico" type="image/svg+xml" />
+  <title>OrbShare · 屏幕共享</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0E1014;
+      --bg-bar: #16191F;
+      --border: rgba(255, 255, 255, 0.05);
+      --border-strong: rgba(255, 255, 255, 0.10);
+      --text: #E5E7EB;
+      --text-dim: #94A3B8;
+      --text-bright: #FFFFFF;
+      --blue: #60A5FA;
+      --emerald: #34D399;
+      --rose: #FB7185;
+      --amber: #FBBF24;
+    }
+    * { box-sizing: border-box; }
+    * { scrollbar-width:none; }
+    *::-webkit-scrollbar { display:none; width:0; height:0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { position:fixed; inset:0; }
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    .join-screen {
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(280px, 1.05fr) minmax(340px, .95fr);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(37,99,235,.20), transparent 34%),
+        radial-gradient(circle at 80% 75%, rgba(6,182,212,.10), transparent 30%),
+        #0b0d12;
+      overflow-y: auto;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: auto;
+    }
+    .join-visual {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100vh;
+      padding: clamp(28px, 5vw, 64px);
+      overflow: hidden;
+    }
+    .brand { display:flex; align-items:center; gap:11px; color:#fff; font-size:16px; font-weight:650; letter-spacing:-.02em; }
+    .join-brand-row { display:flex; align-items:center; justify-content:space-between; gap:16px; position:relative; z-index:2; }
+    .language-switch {
+      min-width:36px; height:30px; padding:0 10px; border-radius:8px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.045);
+      color:#a8b3c5; font:inherit; font-size:10.5px; font-weight:650; cursor:pointer;
+      transition:.15s background,.15s color,.15s border-color;
+    }
+    .language-switch:hover { color:#fff; background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.17); }
+    .topbar .language-switch { height:29px; min-width:34px; padding:0 8px; }
+    .brand-mark {
+      position:relative; width:34px; height:34px; border-radius:11px;
+      background:linear-gradient(145deg,#3b82f6,#06b6d4);
+      box-shadow:0 12px 32px rgba(37,99,235,.32);
+    }
+    .brand-mark::before { content:""; position:absolute; inset:9px; border:2px solid white; border-radius:50%; opacity:.9; }
+    .brand-mark::after { content:""; position:absolute; left:5px; right:5px; top:15px; height:2px; border-radius:2px; background:white; transform:rotate(-24deg); opacity:.9; }
+    .visual-copy { position:relative; z-index:1; max-width:560px; margin:auto 0; }
+    .visual-kicker { display:inline-flex; align-items:center; gap:7px; color:#93c5fd; font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+    .visual-kicker::before { content:""; width:7px; height:7px; border-radius:50%; background:#60a5fa; box-shadow:0 0 16px #3b82f6; }
+    .visual-copy h1 { margin:18px 0 14px; max-width:520px; color:#fff; font-size:clamp(32px,4.6vw,58px); line-height:1.08; letter-spacing:-.045em; }
+    .visual-copy p { margin:0; max-width:460px; color:#94a3b8; font-size:14px; line-height:1.75; }
+    .visual-footer { display:flex; gap:22px; color:#64748b; font-size:11px; }
+    .visual-footer span { display:flex; align-items:center; gap:7px; }
+    .visual-footer b { font:inherit; font-weight:inherit; }
+    .visual-footer i { width:5px; height:5px; border-radius:50%; background:#334155; }
+    .join-panel {
+      display:flex; align-items:center; justify-content:center;
+      min-height:100vh; padding:clamp(22px,5vw,64px);
+      border-left:1px solid rgba(255,255,255,.06);
+      background:rgba(17,20,27,.78); backdrop-filter:blur(28px);
+    }
+    .join-card { width:min(100%,420px); }
+    .meeting-badge { display:flex; align-items:center; gap:12px; margin-bottom:28px; }
+    .meeting-avatar { width:46px; height:46px; flex:0 0 auto; display:grid; place-items:center; border-radius:14px; color:#bfdbfe; background:rgba(59,130,246,.14); border:1px solid rgba(96,165,250,.18); }
+    .meeting-title { margin:0; color:#fff; font-size:19px; font-weight:650; letter-spacing:-.02em; }
+    .meeting-meta { margin-top:5px; color:#64748b; font-size:11.5px; }
+    .join-heading { margin:0 0 7px; color:#fff; font-size:25px; letter-spacing:-.035em; }
+    .join-desc { margin:0 0 26px; color:#8491a5; font-size:12.5px; line-height:1.6; }
+    .form-field { margin-top:16px; }
+    .form-field label { display:block; margin-bottom:7px; color:#a8b3c5; font-size:11.5px; font-weight:550; }
+    .form-input {
+      width:100%; height:45px; padding:0 13px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.045);
+      color:#fff; font:inherit; outline:none; transition:.18s border,.18s box-shadow,.18s background;
+    }
+    .form-input::placeholder { color:#536074; }
+    .form-input:focus { border-color:rgba(96,165,250,.75); background:rgba(255,255,255,.06); box-shadow:0 0 0 3px rgba(59,130,246,.13); }
+    .join-error { min-height:18px; margin-top:10px; color:#fb7185; font-size:11.5px; }
+    .join-btn {
+      width:100%; height:46px; margin-top:10px; border:0; border-radius:10px;
+      display:flex; align-items:center; justify-content:center; gap:9px;
+      color:#fff; background:linear-gradient(135deg,#2563eb,#0ea5e9);
+      box-shadow:0 14px 32px -14px rgba(37,99,235,.9); font:inherit; font-weight:650; cursor:pointer;
+      transition:.18s transform,.18s filter,.18s opacity;
+    }
+    .join-btn:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    .join-btn:disabled { opacity:.58; cursor:wait; transform:none; }
+    .join-note { display:flex; align-items:center; justify-content:center; gap:7px; margin-top:16px; color:#5d697b; font-size:10.5px; }
+    .join-note svg { color:#34d399; }
+    /* ── Top bar ───────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-bar);
+      backdrop-filter: blur(8px);
+      flex-shrink: 0;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .back-btn {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-dim);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+    .room-title {
+      color: var(--text-bright);
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+    .room-sub {
+      color: var(--text-dim);
+      font-size: 10.5px;
+      margin-top: 1px;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+    .pill.live   { border-color: rgba(96,165,250,0.20); background: rgba(96,165,250,0.10); color: var(--blue); }
+    .pill.ok     { border-color: rgba(52,211,153,0.20); background: rgba(52,211,153,0.10); color: var(--emerald); }
+    .pill.err    { border-color: rgba(251,113,133,0.20); background: rgba(251,113,133,0.10); color: var(--rose); }
+    .pill.warn   { border-color: rgba(251,191,36,0.20); background: rgba(251,191,36,0.10); color: var(--amber); }
+    .pill .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+    .pill.live .dot { box-shadow: 0 0 8px currentColor; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+
+    .res-chip {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      color: var(--text);
+      font-size: 11px;
+    }
+    .res-chip .lbl { color: var(--text-dim); }
+
+    .disconnect-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(251,113,133,0.20);
+      background: rgba(251,113,133,0.10);
+      color: var(--rose);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .disconnect-btn:hover { background: rgba(251,113,133,0.20); }
+    .icon-btn {
+      width: 29px; height: 29px; display:grid; place-items:center; border-radius:7px;
+      border:1px solid var(--border); background:rgba(255,255,255,.03);
+      color:var(--text-dim); cursor:pointer; transition:.15s background,.15s color,.15s border-color;
+    }
+    .icon-btn:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .icon-btn.active { color:#6ee7b7; border-color:rgba(52,211,153,.28); background:rgba(16,185,129,.12); }
+    .icon-btn.off { color:#64748b; border-color:rgba(100,116,139,.18); background:rgba(100,116,139,.06); }
+    .icon-btn.blocked { color:#fda4af; border-color:rgba(251,113,133,.28); background:rgba(244,63,94,.10); }
+    .icon-btn.raised { color:#fcd34d; border-color:rgba(251,191,36,.34); background:rgba(245,158,11,.14); box-shadow:0 0 14px rgba(251,191,36,.08); }
+    .icon-btn.laser-on { color:#fecdd3; border-color:rgba(251,113,133,.38); background:rgba(244,63,94,.14); box-shadow:0 0 16px rgba(244,63,94,.12); }
+    .fullscreen-exit {
+      position:absolute; top:max(12px,env(safe-area-inset-top)); right:max(12px,env(safe-area-inset-right));
+      z-index:20; width:38px; height:38px; display:none; place-items:center;
+      border:1px solid rgba(255,255,255,.16); border-radius:10px;
+      background:rgba(15,18,24,.78); color:#fff; backdrop-filter:blur(10px);
+    }
+
+    /* ── Stage ──────────────────────────────────────────────── */
+    .stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .stage-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    video, img.media {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transform: scale(1);
+      transform-origin: center;
+      transition: transform .16s ease;
+    }
+    .stage-inner.media-zoom video,
+    .stage-inner.media-zoom img.media {
+      object-fit: contain;
+      transform: scale(1.2);
+    }
+    .stage-inner.media-fill video,
+    .stage-inner.media-fill img.media {
+      object-fit: cover;
+      transform: scale(1);
+    }
+    video.hidden, img.media.hidden { display: none; }
+    @keyframes danmaku-scroll {
+      from { transform:translateX(0); }
+      to { transform:translateX(calc(-100vw - 100%)); }
+    }
+    .danmaku-layer {
+      position:absolute; inset:0; z-index:12; overflow:hidden; pointer-events:none;
+    }
+    .danmaku-item {
+      position:absolute; left:100%; width:max-content; max-width:none;
+      display:flex; align-items:center; gap:8px; padding:5px 10px;
+      border:1px solid rgba(255,255,255,.20); border-radius:999px;
+      background:rgba(0,0,0,.48); color:#fff; white-space:nowrap;
+      font-size:12px; font-weight:600; line-height:1.2;
+      text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.9);
+      box-shadow:0 5px 18px rgba(0,0,0,.24); backdrop-filter:blur(5px);
+      animation:danmaku-scroll 10s linear forwards; will-change:transform;
+    }
+    .danmaku-item.host { border-color:rgba(147,197,253,.34); background:rgba(37,99,235,.28); }
+    .danmaku-sender { color:#a5f3fc; }
+    .danmaku-item.host .danmaku-sender { color:#bfdbfe; }
+    .stage-inner.laser-enabled { cursor:crosshair; touch-action:none; }
+    .laser-dot {
+      position:absolute; z-index:16; width:14px; height:14px; display:none;
+      transform:translate(-50%,-50%); border:2px solid #fff; border-radius:50%;
+      background:#f43f5e; pointer-events:none;
+      box-shadow:0 0 18px 5px rgba(244,63,94,.72);
+    }
+    .laser-dot.visible { display:block; }
+    .laser-dot::before {
+      content:""; position:absolute; inset:-11px; border:1px solid rgba(253,164,175,.5);
+      border-radius:50%; animation:laser-pulse .9s ease-out infinite;
+    }
+    @keyframes laser-pulse { from { transform:scale(.4); opacity:1; } to { transform:scale(1.25); opacity:0; } }
+    .view-mode-btn {
+      position:absolute; right:12px; bottom:12px; z-index:18;
+      min-width:34px; height:34px; padding:0 10px;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      border:1px solid rgba(255,255,255,.14); border-radius:9px;
+      background:rgba(15,18,24,.78); color:#dbe7f7;
+      font:600 11px/1 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;
+      backdrop-filter:blur(10px); cursor:pointer;
+    }
+    .orientation-hint {
+      position:absolute; left:50%; top:14px; z-index:17;
+      transform:translateX(-50%); display:none; align-items:center; gap:9px;
+      max-width:calc(100% - 28px); padding:8px 10px 8px 12px;
+      border:1px solid rgba(96,165,250,.24); border-radius:10px;
+      background:rgba(15,18,24,.88); color:#dbeafe; white-space:nowrap;
+      font-size:11px; backdrop-filter:blur(12px);
+    }
+    .orientation-hint button {
+      padding:4px 7px; border:0; border-radius:6px;
+      background:rgba(255,255,255,.08); color:#94a3b8; font:inherit;
+    }
+    .stage-inner:fullscreen,
+    .stage-inner:-webkit-full-screen { border:0; border-radius:0; background:#000; }
+    body.stage-fullscreen .app { position:fixed; inset:0; z-index:9999; height:100dvh; background:#000; }
+    body.stage-fullscreen .topbar,
+    body.stage-fullscreen .bottombar { display:none; }
+    body.stage-fullscreen .stage { padding:0; }
+    body.stage-fullscreen .stage-inner { border:0; border-radius:0; }
+    body.stage-fullscreen .fullscreen-exit { display:grid; }
+    body.stage-fullscreen .chat-panel { display:none; }
+
+    /* ── Public chat ─────────────────────────────────────────── */
+    .chat-panel {
+      width: 330px; height: 100%; flex:0 0 auto; display:none; flex-direction:column;
+      overflow:hidden; border:1px solid var(--border-strong); border-radius:14px;
+      background:linear-gradient(180deg,#171c25,#11151c); box-shadow:-18px 0 48px rgba(0,0,0,.24);
+    }
+    .chat-panel.open { display:flex; }
+    .chat-head { display:flex; align-items:center; justify-content:space-between; padding:12px 13px; border-bottom:1px solid var(--border); }
+    .chat-head-copy { display:flex; align-items:center; gap:9px; }
+    .chat-head-icon { width:31px; height:31px; display:grid; place-items:center; border:1px solid rgba(96,165,250,.15); border-radius:10px; background:rgba(37,99,235,.12); color:#93c5fd; }
+    .chat-head strong { display:block; color:#fff; font-size:12px; }
+    .chat-head span { display:block; margin-top:2px; color:#64748b; font-size:9.5px; }
+    .chat-close { width:27px; height:27px; display:grid; place-items:center; border:0; border-radius:7px; background:rgba(255,255,255,.04); color:#94a3b8; }
+    .chat-messages { min-height:0; flex:1; overflow-y:auto; padding:14px; overscroll-behavior:contain; background:radial-gradient(circle at top,rgba(59,130,246,.055),transparent 40%); scrollbar-width:none; }
+    .chat-messages::-webkit-scrollbar { display:none; }
+    .chat-empty { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b; font-size:10px; text-align:center; line-height:1.65; }
+    .chat-empty-icon { width:44px; height:44px; display:grid; place-items:center; margin-bottom:11px; border:1px solid rgba(96,165,250,.12); border-radius:15px; background:rgba(37,99,235,.08); color:#93c5fd; }
+    .chat-empty strong { margin-bottom:3px; color:#cbd5e1; font-size:11.5px; }
+    .chat-item { display:flex; align-items:flex-start; gap:8px; margin-bottom:14px; }
+    .chat-avatar { width:29px; height:29px; flex:0 0 auto; display:grid; place-items:center; border:1px solid rgba(255,255,255,.07); border-radius:11px; background:rgba(255,255,255,.055); color:#cbd5e1; font-size:10px; font-weight:700; }
+    .chat-avatar.host { border-color:rgba(147,197,253,.16); background:rgba(37,99,235,.16); color:#bfdbfe; }
+    .chat-content { min-width:0; max-width:82%; }
+    .chat-meta { display:flex; align-items:center; gap:5px; margin-bottom:4px; color:#64748b; font-size:9px; }
+    .chat-meta .host { color:#93c5fd; font-weight:600; }
+    .chat-host-badge { padding:1px 4px; border-radius:4px; background:rgba(37,99,235,.13); color:#93c5fd; font-size:7.5px; }
+    .chat-bubble { display:inline-block; max-width:100%; padding:8px 10px; border:1px solid rgba(255,255,255,.06); border-radius:4px 12px 12px 12px; background:rgba(255,255,255,.06); color:#dbe4f0; box-shadow:0 4px 14px rgba(0,0,0,.08); font-size:11px; line-height:1.55; overflow-wrap:anywhere; white-space:pre-wrap; }
+    .chat-bubble.host { border-color:rgba(96,165,250,.13); background:linear-gradient(135deg,rgba(37,99,235,.2),rgba(6,182,212,.11)); color:#e0f2fe; }
+    .chat-compose { position:relative; padding:11px; border-top:1px solid var(--border); background:rgba(15,18,24,.93); }
+    .chat-input-shell { padding:7px; border:1px solid var(--border-strong); border-radius:12px; background:rgba(0,0,0,.2); transition:border-color .18s,background .18s; }
+    .chat-input-shell:focus-within { border-color:rgba(96,165,250,.42); background:rgba(0,0,0,.25); }
+    .chat-input { display:block; width:100%; min-height:43px; max-height:92px; padding:2px 4px; resize:none; border:0; outline:none; background:transparent; color:#fff; font:inherit; font-size:11px; line-height:1.55; }
+    .chat-input::placeholder { color:#475569; }
+    .chat-compose-actions { display:flex; align-items:center; justify-content:space-between; margin-top:5px; }
+    .chat-tools,.chat-submit { display:flex; align-items:center; gap:6px; }
+    .chat-emoji-toggle { width:28px; height:28px; display:grid; place-items:center; border:0; border-radius:8px; background:transparent; color:#64748b; }
+    .chat-emoji-toggle:hover,.chat-emoji-toggle.active { background:rgba(251,191,36,.12); color:#fde68a; }
+    .chat-hint,.chat-count { color:#475569; font-size:8.5px; }
+    .chat-count { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .chat-send { height:28px; display:flex; align-items:center; gap:5px; padding:0 11px; border:0; border-radius:8px; background:linear-gradient(90deg,#2563eb,#06b6d4); color:#fff; font:inherit; font-size:9.5px; font-weight:700; box-shadow:0 5px 16px rgba(37,99,235,.16); }
+    .chat-send:disabled { opacity:.35; cursor:not-allowed; }
+    .chat-error { min-height:14px; padding:5px 3px 0; color:#fb7185; font-size:9px; }
+    .emoji-picker { position:absolute; left:11px; right:11px; bottom:105px; z-index:5; padding:10px; border:1px solid rgba(255,255,255,.1); border-radius:13px; background:rgba(27,33,44,.98); box-shadow:0 20px 52px rgba(0,0,0,.58); backdrop-filter:blur(18px); }
+    .emoji-picker-head { display:flex; align-items:center; justify-content:space-between; margin:0 2px 7px; color:#cbd5e1; font-size:9.5px; }
+    .emoji-picker-close { border:0; background:transparent; color:#64748b; font:inherit; font-size:9px; }
+    .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:3px; }
+    .emoji-item { aspect-ratio:1; display:grid; place-items:center; border:0; border-radius:8px; background:transparent; font-size:17px; }
+    .emoji-item:hover { background:rgba(255,255,255,.09); }
+    .emoji-item:active { transform:scale(.9); }
+
+    /* Overlay states */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(14,16,20,0.85);
+      backdrop-filter: blur(4px);
+      text-align: center;
+      padding: 24px;
+    }
+    .overlay.dense { gap: 10px; }
+    .overlay-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 12px 28px -8px rgba(59,130,246,0.4);
+    }
+    .overlay-icon.warn { background: rgba(255,255,255,0.05); color: var(--text); }
+    .overlay-title {
+      color: var(--text-bright);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .overlay-msg {
+      color: var(--text-dim);
+      font-size: 12px;
+      max-width: 320px;
+      line-height: 1.45;
+    }
+    .overlay-url {
+      margin-top: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: rgba(255,255,255,0.04);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      color: var(--blue);
+      font-size: 11.5px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(96,165,250,0.20);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Bottom bar */
+    .bottombar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 18px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-bar);
+      backdrop-filter: blur(8px);
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: var(--bg-bar);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+
+    /* Hidden by default */
+    .hidden { display: none !important; }
+    @media (max-width: 760px) {
+      html, body { overflow:hidden; }
+      .join-screen { display:block; height:100dvh; overflow-y:auto; overscroll-behavior:none; }
+      .join-visual { min-height:auto; padding:22px 22px 8px; }
+      .visual-copy, .visual-footer { display:none; }
+      .join-panel { min-height:calc(100vh - 64px); padding:22px; border-left:0; background:transparent; backdrop-filter:none; align-items:flex-start; }
+      .join-card { padding-top:6vh; }
+      .topbar { padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left)); }
+      .topbar-right { gap:5px; }
+      .res-chip, .room-sub, .back-btn { display:none !important; }
+      .pill { max-width:155px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .disconnect-btn { padding:5px 10px; }
+      .stage { padding:0; }
+      .stage-inner { border:0; border-radius:0; }
+      .chat-panel { position:absolute; left:10px; right:10px; bottom:10px; z-index:35; width:auto; height:min(64dvh,480px); border-radius:14px; }
+      .chat-head { padding:13px 14px; }
+      .chat-head strong { font-size:14px; }
+      .chat-head span { font-size:11px; }
+      .chat-messages { padding:14px; }
+      .chat-avatar { width:34px; height:34px; font-size:12px; }
+      .chat-meta { font-size:11px; }
+      .chat-bubble { padding:9px 11px; font-size:14px; }
+      .chat-compose { padding:12px; }
+      .chat-input { min-height:48px; max-height:104px; font-size:16px; line-height:1.45; }
+      .chat-emoji-toggle { width:36px; height:36px; }
+      .chat-send { height:36px; padding:0 14px; font-size:13px; }
+      .chat-hint { display:none; }
+      .chat-count { font-size:10px; }
+      .emoji-picker { bottom:125px; padding:11px; }
+      .emoji-picker-head { font-size:12px; }
+      .emoji-picker-close { min-width:42px; min-height:32px; font-size:11px; }
+      .emoji-grid { grid-template-columns:repeat(8,minmax(34px,1fr)); gap:4px; }
+      .emoji-item { min-width:34px; min-height:34px; font-size:21px; }
+      body.viewer-live .orientation-hint { display:flex; }
+      .view-mode-btn { right:10px; bottom:10px; }
+      .bottombar { padding:7px max(12px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+      .bottombar span:first-child { display:none; }
+      .bottombar { justify-content:center; }
+    }
+    @media (max-width: 480px) {
+      .topbar-left .room-title { max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .topbar-right > .pill { display:none; }
+    }
+    @media (orientation:landscape) and (max-height:500px) {
+      .app { position:relative; }
+      .topbar {
+        position:absolute; top:0; left:0; right:0; z-index:24;
+        padding-top:max(7px,env(safe-area-inset-top)); padding-bottom:7px;
+        border-bottom:0;
+        background:linear-gradient(180deg,rgba(15,18,24,.94),rgba(15,18,24,.72) 70%,transparent);
+      }
+      .bottombar { display:none; }
+      .stage { padding:0; }
+      .stage-inner { border:0; border-radius:0; }
+      .chat-panel { top:8px; right:8px; bottom:8px; left:auto; width:min(340px,48vw); height:auto; }
+      .stage-inner.media-zoom video,
+      .stage-inner.media-zoom img.media { transform:scale(1.35); }
+      .orientation-hint { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <section class="join-screen" id="join-screen">
+    <div class="join-visual">
+      <div class="join-brand-row"><div class="brand"><span class="brand-mark"></span><span>OrbShare</span></div><button class="language-switch" id="join-language-switch" type="button">EN</button></div>
+      <div class="visual-copy">
+        <div class="visual-kicker" data-i18n="局域网会议">局域网会议</div>
+        <h1 data-i18n-html="清晰、直接的<br />内部屏幕会议">清晰、直接的<br />内部屏幕会议</h1>
+        <p data-i18n="同一局域网内直接连接。手机、平板和电脑打开浏览器即可加入，不经过公网，不需要安装额外客户端。">同一局域网内直接连接。手机、平板和电脑打开浏览器即可加入，不经过公网，不需要安装额外客户端。</p>
+      </div>
+      <div class="visual-footer"><span><i></i><b data-i18n="无需安装">无需安装</b></span><span><i></i><b data-i18n="高清画面">高清画面</b></span><span><i></i><b data-i18n="局域网传输">局域网传输</b></span></div>
+    </div>
+    <div class="join-panel">
+      <form class="join-card" id="join-form">
+        <div class="meeting-badge">
+          <div class="meeting-avatar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="14" rx="3"/><path d="M8 21h8M12 18v3"/></svg>
+          </div>
+          <div><h2 class="meeting-title" id="lobby-room-title">正在读取会议信息…</h2><div class="meeting-meta" id="lobby-room-meta">局域网安全连接</div></div>
+        </div>
+        <h1 class="join-heading" data-i18n="加入会议">加入会议</h1>
+        <p class="join-desc" data-i18n="确认名称后加入。会议中的其他人会看到这个名称。">确认名称后加入。会议中的其他人会看到这个名称。</p>
+        <div class="form-field">
+          <label for="guest-name" data-i18n="你的名称">你的名称</label>
+          <input class="form-input" id="guest-name" maxlength="32" autocomplete="name" placeholder="例如：研发部 · 小王" data-i18n-placeholder="例如：研发部 · 小王" />
+        </div>
+        <div class="form-field hidden" id="password-field">
+          <label for="meeting-password" data-i18n="会议密码">会议密码</label>
+          <input class="form-input" id="meeting-password" type="password" maxlength="64" autocomplete="current-password" placeholder="请输入会议密码" data-i18n-placeholder="请输入会议密码" />
+        </div>
+        <div class="join-error" id="join-error"></div>
+        <button class="join-btn" id="join-btn" type="submit" data-i18n="加入会议">加入会议</button>
+        <div class="join-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3v8Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span data-i18n="画面仅在当前局域网内传输">画面仅在当前局域网内传输</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="app hidden" id="meeting-app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="back-btn" id="back-btn" title="返回">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div>
+          <div class="room-title" id="room-title">屏幕共享</div>
+          <div class="room-sub" id="room-sub">局域网安全连接</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="language-switch" id="meeting-language-switch" type="button">EN</button>
+        <span class="pill" id="status-pill">
+          <span class="dot"></span>
+          <span id="status-text">等待连接…</span>
+        </span>
+        <span class="pill ok hidden" id="system-audio-chip" title="主持人正在共享系统声音">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></svg>
+          系统声音
+        </span>
+        <span class="pill err hidden" id="recording-chip" title="主持人正在录制本次会议">
+          <span class="dot"></span>
+          正在录制
+        </span>
+        <span class="pill res-chip hidden" id="res-chip">
+          <span class="lbl" data-i18n="画面">画面</span> <span id="res-val">—</span>
+        </span>
+        <button class="icon-btn" id="mic-toggle" title="开启麦克风" aria-label="开启麦克风">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+        </button>
+        <button class="icon-btn" id="hand-toggle" title="向主持人举手" aria-label="向主持人举手" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 11V5.5a1.5 1.5 0 0 1 3 0V10M10.5 10V4a1.5 1.5 0 0 1 3 0v6M13.5 10V5a1.5 1.5 0 0 1 3 0v6M16.5 11V7.5a1.5 1.5 0 0 1 3 0V14c0 4.4-2.7 7-7 7h-1.2a7 7 0 0 1-5.2-2.3L3.4 15.8a1.6 1.6 0 0 1 2.2-2.3L7.5 15"/></svg>
+        </button>
+        <button class="icon-btn active" id="danmaku-toggle" title="关闭弹幕" aria-label="关闭弹幕" aria-pressed="true">
+          <svg id="danmaku-on-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4M7 14h7M17 10h.01M17 14h.01"/></svg>
+          <svg class="hidden" id="danmaku-off-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5h11a3 3 0 0 1 3 3v7c0 .7-.2 1.3-.6 1.8M15 19H6a3 3 0 0 1-3-3V8c0-.8.3-1.5.8-2.1M7 10h2M7 14h6M3 3l18 18"/></svg>
+        </button>
+        <button class="icon-btn" id="laser-toggle" title="开启激光笔" aria-label="开启激光笔" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button class="icon-btn" id="chat-toggle" title="会内聊天" aria-label="会内聊天">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></svg>
+        </button>
+        <button class="icon-btn" id="fullscreen-btn" title="全屏">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        </button>
+        <button class="disconnect-btn" id="disconnect-btn" data-i18n="断开">断开</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="stage-inner">
+        <video id="remote-video" autoplay playsinline muted></video>
+        <audio id="remote-audio" autoplay playsinline></audio>
+        <img id="mjpeg-img" class="media hidden" alt="" />
+        <div class="danmaku-layer" id="danmaku-layer" aria-hidden="true"></div>
+        <div class="laser-dot" id="laser-dot" aria-hidden="true"></div>
+        <button class="view-mode-btn" id="view-mode-btn" type="button" title="切换画面显示方式">适中</button>
+        <div class="orientation-hint" id="orientation-hint">
+          <span data-i18n="旋转手机横屏，画面会更大">旋转手机横屏，画面会更大</span>
+          <button id="orientation-dismiss" type="button" data-i18n="保持竖屏">保持竖屏</button>
+        </div>
+        <button class="fullscreen-exit" id="fullscreen-exit" title="退出全屏" aria-label="退出全屏">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6"/></svg>
+        </button>
+
+        <div class="overlay" id="overlay-pending">
+          <div class="spinner"></div>
+          <div class="overlay-title" id="overlay-title">正在连接…</div>
+          <div class="overlay-msg" id="overlay-msg">请稍候，正在连接会议画面。</div>
+        </div>
+
+        <div class="overlay dense hidden" id="overlay-ended">
+          <div class="overlay-icon warn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+          <div class="overlay-title" id="ended-title">投屏已结束</div>
+          <div class="overlay-msg" id="ended-msg">房主已停止共享，当前连接已经关闭。</div>
+          <button class="disconnect-btn" id="overlay-back" data-i18n="返回">返回</button>
+        </div>
+      </div>
+      <aside class="chat-panel" id="chat-panel" aria-label="会内聊天">
+        <div class="chat-head">
+          <div class="chat-head-copy">
+            <div class="chat-head-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg></div>
+            <div><strong data-i18n="会内聊天">会内聊天</strong><span data-i18n="仅当前局域网会议可见">仅当前局域网会议可见</span></div>
+          </div>
+          <button class="chat-close" id="chat-close" type="button" aria-label="关闭聊天">×</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg></div>
+            <strong data-i18n="开始会内交流">开始会内交流</strong>
+            <span data-i18n-html="消息仅在本次会议中可见<br />支持文字和常用表情">消息仅在本次会议中可见<br />支持文字和常用表情</span>
+          </div>
+        </div>
+        <form class="chat-compose" id="chat-form">
+          <div class="emoji-picker hidden" id="emoji-picker" aria-label="常用表情">
+            <div class="emoji-picker-head"><span data-i18n="常用表情">常用表情</span><button class="emoji-picker-close" id="emoji-picker-close" type="button" data-i18n="收起">收起</button></div>
+            <div class="emoji-grid" id="emoji-grid"></div>
+          </div>
+          <div class="chat-input-shell">
+            <textarea class="chat-input" id="chat-input" maxlength="500" rows="2" autocomplete="off" placeholder="输入消息，Enter 发送…" data-i18n-placeholder="输入消息，Enter 发送…"></textarea>
+            <div class="chat-compose-actions">
+              <div class="chat-tools">
+                <button class="chat-emoji-toggle" id="emoji-toggle" type="button" title="选择常用表情" aria-label="选择常用表情" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 10h.01M15.5 10h.01M8.5 14.5a5 5 0 0 0 7 0"/></svg></button>
+                <span class="chat-hint" data-i18n="Shift + Enter 换行">Shift + Enter 换行</span>
+              </div>
+              <div class="chat-submit">
+                <span class="chat-count" id="chat-count">0/500</span>
+                <button class="chat-send" id="chat-send" type="submit" disabled><span data-i18n="发送">发送</span> <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+              </div>
+            </div>
+          </div>
+          <div class="chat-error" id="chat-error"></div>
+        </form>
+      </aside>
+    </main>
+
+    <footer class="bottombar">
+      <span>OrbShare · <span data-i18n="局域网安全直连">局域网安全直连</span></span>
+      <span id="role-line">观看者 · 准备中</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    const LANGUAGE_STORAGE_KEY = 'orbshare-language';
+    const englishText = {
+      'OrbShare · 屏幕共享': 'OrbShare · Screen Sharing',
+      '局域网会议': 'LAN meeting',
+      '清晰、直接的<br />内部屏幕会议': 'Clear, direct<br />private screen meetings',
+      '同一局域网内直接连接。手机、平板和电脑打开浏览器即可加入，不经过公网，不需要安装额外客户端。': 'Connect directly on the same LAN. Join from a phone, tablet, or computer browser without the public internet or another app.',
+      '无需安装': 'No installation',
+      '高清画面': 'Clear picture',
+      '局域网传输': 'LAN only',
+      '正在读取会议信息…': 'Loading meeting information…',
+      '局域网安全连接': 'Secure LAN connection',
+      '加入会议': 'Join meeting',
+      '确认名称后加入。会议中的其他人会看到这个名称。': 'Confirm your name to join. Other participants will see this name.',
+      '你的名称': 'Your name',
+      '例如：研发部 · 小王': 'For example: Alex · Engineering',
+      '会议密码': 'Meeting password',
+      '请输入会议密码': 'Enter meeting password',
+      '画面仅在当前局域网内传输': 'The shared picture stays on this LAN',
+      '返回': 'Back',
+      '屏幕共享': 'Screen sharing',
+      '等待连接…': 'Waiting to connect…',
+      '主持人正在共享系统声音': 'The host is sharing computer audio',
+      '系统声音': 'Computer audio',
+      '主持人正在录制本次会议': 'The host is recording this meeting',
+      '正在录制': 'Recording',
+      '画面': 'Picture',
+      '开启麦克风': 'Turn on microphone',
+      '关闭麦克风': 'Turn off microphone',
+      '主持人已将你禁言': 'The host muted you',
+      '向主持人举手': 'Raise hand',
+      '放下手': 'Lower hand',
+      '举手状态处理中': 'Updating hand status',
+      '关闭弹幕': 'Turn off bullet comments',
+      '开启弹幕': 'Turn on bullet comments',
+      '开启激光笔': 'Turn on laser pointer',
+      '关闭激光笔': 'Turn off laser pointer',
+      '会内聊天': 'Meeting chat',
+      '全屏': 'Full screen',
+      '退出全屏': 'Exit full screen',
+      '断开': 'Disconnect',
+      '切换画面显示方式': 'Change picture display mode',
+      '适中': 'Zoom',
+      '旋转手机横屏，画面会更大': 'Rotate your phone for a larger picture',
+      '保持竖屏': 'Keep portrait',
+      '正在连接…': 'Connecting…',
+      '请稍候，正在连接会议画面。': 'Please wait while the shared picture connects.',
+      '投屏已结束': 'Screen sharing ended',
+      '房主已停止共享，当前连接已经关闭。': 'The host stopped sharing and the connection is closed.',
+      '仅当前局域网会议可见': 'Visible only in this LAN meeting',
+      '关闭聊天': 'Close chat',
+      '开始会内交流': 'Start the conversation',
+      '消息仅在本次会议中可见<br />支持文字和常用表情': 'Messages are visible only in this meeting<br />Text and common emoji are supported',
+      '常用表情': 'Common emoji',
+      '收起': 'Close',
+      '输入消息，Enter 发送…': 'Type a message; press Enter to send…',
+      '选择常用表情': 'Choose an emoji',
+      'Shift + Enter 换行': 'Shift + Enter for a new line',
+      '发送': 'Send',
+      '观看者': 'Viewer',
+      '主持人': 'Host',
+      '准备中': 'Preparing',
+      '局域网安全直连': 'Secure direct LAN connection',
+      '观看页版本不一致': 'Viewer version mismatch',
+      '观看页需要更新': 'Viewer update required',
+      '请重新启动发起端后，再刷新此页面': 'Restart the host app, then refresh this page',
+      '网页版本 {viewer}，服务端版本 {server}': 'Page version {viewer}, server version {server}',
+      '弹幕已开启': 'Bullet comments on',
+      '弹幕已关闭': 'Bullet comments off',
+      '激光笔已开启，移动指针即可标示': 'Laser pointer on. Move the pointer to highlight content.',
+      '激光笔已关闭': 'Laser pointer off',
+      '主': 'H',
+      '访': 'G',
+      '插入表情 {emoji}': 'Insert emoji {emoji}',
+      '聊天通道正在连接，请稍后再试': 'Chat is still connecting. Try again shortly.',
+      '消息发送失败，请重试': 'Message could not be sent. Try again.',
+      '音频通道正在连接，请稍后再试': 'Audio is still connecting. Try again shortly.',
+      '当前 HTTP 页面无法使用麦克风，请使用 OrbShare 客户端': 'Microphone access is unavailable on this HTTP page. Use the OrbShare app.',
+      '没有检测到可用麦克风': 'No microphone was found',
+      '麦克风已开启': 'Microphone on',
+      '无法开启麦克风': 'Could not turn on the microphone',
+      '无法使用麦克风，请在系统设置或浏览器站点设置中允许麦克风访问后重试。': "Microphone access is blocked. Allow it in System Settings or the browser's site settings, then try again.",
+      '麦克风正在被其他应用占用，请关闭占用后重试。': 'The microphone is being used by another app. Close that app and try again.',
+      '麦克风启动失败，请稍后重试。': 'The microphone could not start. Try again shortly.',
+      '无法开启麦克风，请检查权限后重试。': 'Could not turn on the microphone. Check its permission and try again.',
+      '控制通道正在连接，请稍后再举手': 'Meeting controls are still connecting. Try raising your hand again shortly.',
+      '已向主持人举手': 'Hand raised',
+      '已放下手': 'Hand lowered',
+      '举手状态发送失败，请重试': 'Could not update your hand status. Try again.',
+      '首帧超时': 'First picture timed out',
+      '{reason}: 首帧超时': '{reason}: First picture timed out',
+      '等待视频流超时': 'Shared picture timed out',
+      '请检查主机是否已开始投屏。': 'Check whether the host has started sharing.',
+      '完整': 'Fit',
+      '填满': 'Fill',
+      '当前：{mode}，点击切换显示方式': 'Current: {mode}. Click to change display mode.',
+      '完整显示共享画面': 'Show the complete shared picture',
+      '适中放大，减少两侧留黑': 'Zoom slightly to reduce side bars',
+      '填满窗口，画面边缘可能裁切': 'Fill the window; picture edges may be cropped',
+      '已连接': 'Connected',
+      '正在观看 · 高清画面': 'Watching · Clear picture',
+      '画面正常': 'Picture normal',
+      '连接已断开': 'Connection lost',
+      '连接失败': 'Connection failed',
+      '网络连接未恢复，正在自动重新加入会议。': 'The network has not recovered. Rejoining automatically.',
+      '连接中断': 'Connection interrupted',
+      '请输入你的名称': 'Enter your name',
+      '正在加入…': 'Joining…',
+      '重新加入': 'Rejoin',
+      '会议服务暂不可用': 'The meeting service is temporarily unavailable',
+      '内部屏幕会议': 'Internal screen meeting',
+      '含系统声音': 'Includes computer audio',
+      '无法读取会议': 'Could not load meeting',
+      '请确认主机仍在共享屏幕': 'Make sure the host is still sharing',
+      '视频连接已建立': 'Video connected',
+      '点击页面以播放会议声音': 'Tap the page to play meeting audio',
+      '高清视频已连接': 'Clear video connected',
+      '连接中': 'Connecting',
+      '正在恢复': 'Recovering',
+      '已连接 · 等待视频帧': 'Connected · Waiting for picture',
+      '网络波动 · 正在恢复': 'Network changed · Recovering',
+      '会议密码不正确': 'Incorrect meeting password',
+      '正在更新观看页…': 'Updating viewer…',
+      '观看页版本已更新，正在重新加载…': 'The viewer was updated and is reloading…',
+      '你已被主持人移出会议': 'The host removed you from the meeting',
+      '会议人数已满（最多 {count} 位观看者）': 'The meeting is full (up to {count} viewers)',
+      '会议连接服务返回 {status}（主机可能尚未开始共享）': 'Meeting service returned {status}; the host may not have started sharing',
+      '观看端已连接': 'Viewer connected',
+      '{host} · 观看端已连接{audio}': '{host} · Viewer connected{audio}',
+      '会议已结束': 'Meeting ended',
+      '房主已结束本次会议': 'The host ended this meeting',
+      '房主已结束会议': 'The host ended the meeting',
+      '已被移出会议': 'Removed from meeting',
+      '已被移出': 'Removed',
+      '消息发送失败': 'Message could not be sent',
+      '主持人已将你移出本次会议': 'The host removed you from this meeting',
+      '主持人已结束你的观看权限，本次会议中无法自动重新加入。': 'The host removed you from this meeting. You cannot rejoin automatically.',
+      '正在切换共享内容': 'Switching shared content',
+      '主持人正在切换共享内容…': 'The host is switching shared content…',
+      '共享内容已切换': 'Shared content switched',
+      '主持人已允许你发言': 'The host allowed you to speak',
+      '事件通道不可用': 'The event channel is unavailable',
+      '正在恢复连接…': 'Restoring connection…',
+      '{reason}，正在自动重新加入会议。': '{reason}. Rejoining the meeting automatically.',
+      '连接已恢复': 'Connection restored',
+      '等待网络恢复': 'Waiting for network',
+      '暂时无法恢复连接': 'Could not restore the connection yet',
+      '保持页面打开，网络恢复后会自动重新加入。': 'Keep this page open. It will rejoin when the network returns.',
+      '网络仍未恢复': 'The network is still unavailable',
+      '连接状态仍在恢复': 'The connection is still recovering',
+      '已断开连接': 'Disconnected',
+      '已断开': 'Disconnected',
+      '正在恢复视频…': 'Restoring video…',
+      '从后台返回后视频尚未恢复': 'Video has not resumed after returning to the page',
+      '从后台返回': 'Returned to the page',
+      '已进入沉浸观看': 'Immersive viewing on',
+    };
+
+    const detectViewerLanguage = () => {
+      try {
+        const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (saved === 'zh-CN' || saved === 'en-US') return saved;
+      } catch (_) {}
+      const languages = [...(navigator.languages || []), navigator.language].filter(Boolean);
+      return languages.some((value) => String(value).toLowerCase().startsWith('zh')) ? 'zh-CN' : 'en-US';
+    };
+    let uiLanguage = detectViewerLanguage();
+    const normalizeSource = (source) => source === 'Internal screen meeting' ? '内部屏幕会议' : source;
+    const tr = (source, variables) => {
+      const normalizedSource = normalizeSource(source);
+      const template = uiLanguage === 'en-US' ? (englishText[normalizedSource] || normalizedSource) : normalizedSource;
+      return String(template).replace(/\{(\w+)\}/g, (match, key) => variables && key in variables ? String(variables[key]) : match);
+    };
+    const describeMicrophoneError = (error) => {
+      const name = error?.name || '';
+      const message = error?.message || String(error || '');
+      if (name === 'NotAllowedError' || name === 'SecurityError' || /denied permission|not allowed|denied/i.test(message)) {
+        return '无法使用麦克风，请在系统设置或浏览器站点设置中允许麦克风访问后重试。';
+      }
+      if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return '没有检测到可用麦克风';
+      if (name === 'NotReadableError' || name === 'TrackStartError') return '麦克风正在被其他应用占用，请关闭占用后重试。';
+      if (name === 'AbortError') return '麦克风启动失败，请稍后重试。';
+      return '无法开启麦克风，请检查权限后重试。';
+    };
+
+    const videoEl = document.getElementById('remote-video');
+    const audioEl = document.getElementById('remote-audio');
+    const mjpegEl = document.getElementById('mjpeg-img');
+    const overlayPending = document.getElementById('overlay-pending');
+    const overlayEnded = document.getElementById('overlay-ended');
+    const endedTitle = document.getElementById('ended-title');
+    const endedMsg = document.getElementById('ended-msg');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayMsg = document.getElementById('overlay-msg');
+    const statusPill = document.getElementById('status-pill');
+    const statusText = document.getElementById('status-text');
+    const resChip = document.getElementById('res-chip');
+    const resVal = document.getElementById('res-val');
+    const roomTitle = document.getElementById('room-title');
+    const roomSub = document.getElementById('room-sub');
+    const systemAudioChip = document.getElementById('system-audio-chip');
+    const recordingChip = document.getElementById('recording-chip');
+    const roleLine = document.getElementById('role-line');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const backBtn = document.getElementById('back-btn');
+    const overlayBack = document.getElementById('overlay-back');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const fullscreenExit = document.getElementById('fullscreen-exit');
+    const viewModeBtn = document.getElementById('view-mode-btn');
+    const chatToggle = document.getElementById('chat-toggle');
+    const micToggle = document.getElementById('mic-toggle');
+    const handToggle = document.getElementById('hand-toggle');
+    const danmakuToggle = document.getElementById('danmaku-toggle');
+    const laserToggle = document.getElementById('laser-toggle');
+    const laserDot = document.getElementById('laser-dot');
+    const danmakuOnIcon = document.getElementById('danmaku-on-icon');
+    const danmakuOffIcon = document.getElementById('danmaku-off-icon');
+    const danmakuLayer = document.getElementById('danmaku-layer');
+    const chatPanel = document.getElementById('chat-panel');
+    const chatClose = document.getElementById('chat-close');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatEmpty = document.getElementById('chat-empty');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatError = document.getElementById('chat-error');
+    const chatCount = document.getElementById('chat-count');
+    const chatSend = document.getElementById('chat-send');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const emojiGrid = document.getElementById('emoji-grid');
+    const emojiToggle = document.getElementById('emoji-toggle');
+    const emojiPickerClose = document.getElementById('emoji-picker-close');
+    const orientationHint = document.getElementById('orientation-hint');
+    const orientationDismiss = document.getElementById('orientation-dismiss');
+    const stageInner = document.querySelector('.stage-inner');
+    const toast = document.getElementById('toast');
+    const joinScreen = document.getElementById('join-screen');
+    const meetingApp = document.getElementById('meeting-app');
+    const joinForm = document.getElementById('join-form');
+    const joinBtn = document.getElementById('join-btn');
+    const joinError = document.getElementById('join-error');
+    const guestNameInput = document.getElementById('guest-name');
+    const passwordInput = document.getElementById('meeting-password');
+    const passwordField = document.getElementById('password-field');
+    const lobbyRoomTitle = document.getElementById('lobby-room-title');
+    const lobbyRoomMeta = document.getElementById('lobby-room-meta');
+    const joinLanguageSwitch = document.getElementById('join-language-switch');
+    const meetingLanguageSwitch = document.getElementById('meeting-language-switch');
+
+    let lobbyTitleSource = '正在读取会议信息…';
+    let lobbyTitleIsRoomName = false;
+    const setLobbyTitle = (source, isRoomName = false) => {
+      lobbyTitleSource = source;
+      lobbyTitleIsRoomName = isRoomName;
+      lobbyRoomTitle.textContent = tr(source);
+    };
+    let liveRoomTitleSource = '屏幕共享';
+    let liveRoomTitleIsRoomName = false;
+    const setLiveRoomTitle = (source, isRoomName = false) => {
+      liveRoomTitleSource = source;
+      liveRoomTitleIsRoomName = isRoomName;
+      roomTitle.textContent = tr(source);
+    };
+    let joinErrorSource = '';
+    let joinErrorVariables = undefined;
+    const setJoinError = (source = '', variables) => {
+      joinErrorSource = source;
+      joinErrorVariables = variables;
+      joinError.textContent = source ? tr(source, variables) : '';
+    };
+    const meetingError = (source, variables) => Object.assign(new Error(source), {
+      i18nSource: source,
+      i18nVariables: variables,
+    });
+
+    const applyStaticTranslations = () => {
+      document.documentElement.lang = uiLanguage;
+      document.title = tr('OrbShare · 屏幕共享');
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        element.textContent = tr(element.dataset.i18n || '');
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach((element) => {
+        element.innerHTML = tr(element.dataset.i18nHtml || '');
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+        element.setAttribute('placeholder', tr(element.dataset.i18nPlaceholder || ''));
+      });
+      const nextLabel = uiLanguage === 'zh-CN' ? '中文' : 'EN';
+      const switchTitle = uiLanguage === 'zh-CN' ? 'Switch to English' : '切换为中文';
+      for (const button of [joinLanguageSwitch, meetingLanguageSwitch]) {
+        button.textContent = nextLabel;
+        button.title = switchTitle;
+        button.setAttribute('aria-label', switchTitle);
+      }
+      backBtn.title = tr('返回');
+      systemAudioChip.title = tr('主持人正在共享系统声音');
+      recordingChip.title = tr('主持人正在录制本次会议');
+      chatToggle.title = tr('会内聊天');
+      chatToggle.setAttribute('aria-label', tr('会内聊天'));
+      fullscreenBtn.title = tr('全屏');
+      fullscreenExit.title = tr('退出全屏');
+      fullscreenExit.setAttribute('aria-label', tr('退出全屏'));
+      chatPanel.setAttribute('aria-label', tr('会内聊天'));
+      chatClose.setAttribute('aria-label', tr('关闭聊天'));
+      emojiPicker.setAttribute('aria-label', tr('常用表情'));
+      emojiToggle.title = tr('选择常用表情');
+      emojiToggle.setAttribute('aria-label', tr('选择常用表情'));
+    };
+
+    let overlayTitleSource = '正在连接…';
+    let overlayMessageSource = '请稍候，正在连接会议画面。';
+    let overlayMessageVariables = undefined;
+    const setOverlayCopy = (title, message, variables) => {
+      overlayTitleSource = title;
+      overlayMessageSource = message;
+      overlayMessageVariables = variables;
+      overlayTitle.textContent = tr(title);
+      overlayMsg.textContent = tr(message, variables);
+    };
+    let endedTitleSource = '投屏已结束';
+    let endedMessageSource = '房主已停止共享，当前连接已经关闭。';
+    const setEndedCopy = (title, message) => {
+      endedTitleSource = title;
+      endedMessageSource = message;
+      endedTitle.textContent = tr(title);
+      endedMsg.textContent = tr(message);
+    };
+    let currentRoleState = '准备中';
+    const setRoleState = (state) => {
+      currentRoleState = state;
+      roleLine.textContent = tr('观看者') + ' · ' + tr(state);
+    };
+    let roomSubtitleSource = '局域网安全连接';
+    let roomSubtitleVariables = undefined;
+    const setRoomSubtitle = (source, variables) => {
+      roomSubtitleSource = source;
+      roomSubtitleVariables = source === '{host} · 观看端已连接{audio}' && variables
+        ? { ...variables, audio: systemAudioActive ? ' · ' + tr('系统声音') : '' }
+        : variables;
+      roomSub.textContent = tr(source, roomSubtitleVariables);
+    };
+    let lobbyHostIp = '';
+    let lobbyIncludesSystemAudio = false;
+    let lobbyMetaSource = '局域网安全连接';
+    const setLobbyMeta = (hostIp, includesSystemAudio) => {
+      lobbyHostIp = hostIp || '';
+      lobbyIncludesSystemAudio = Boolean(includesSystemAudio);
+      lobbyRoomMeta.textContent = lobbyHostIp
+        ? lobbyHostIp + ' · ' + tr('局域网会议') + (lobbyIncludesSystemAudio ? ' · ' + tr('含系统声音') : '')
+        : tr('局域网安全连接');
+    };
+    const setLobbyMessage = (source) => {
+      lobbyHostIp = '';
+      lobbyMetaSource = source;
+      lobbyRoomMeta.textContent = tr(source);
+    };
+
+    let pc = null;
+    let controlChannel = null;
+    let pointerChannel = null;
+    let audioSender = null;
+    let microphoneTrack = null;
+    let microphoneEnabled = false;
+    let hostMuted = false;
+    let handRaised = false;
+    let handActionPending = false;
+    let remoteAudioStream = new MediaStream();
+    let danmakuEnabled = localStorage.getItem('orbshare-danmaku-enabled') !== 'false';
+    let danmakuLane = 0;
+    let laserEnabled = false;
+    let laserHideTimer = null;
+    let lastLaserSendAt = 0;
+    const commonChatEmojis = [
+      '😀','😄','😁','😂','😊','😍','🥳','😎',
+      '🤔','😅','😭','😮','😡','👍','👏','🙌',
+      '👌','🤝','🙏','💪','👋','🎉','❤️','🔥',
+      '✨','✅','💡','👀','🚀','📌','💯','🌟'
+    ];
+    let firstFrameTimer = null;
+    let isLive = false;
+    let h264FirstFrame = false;
+    let connectionState = 'new';
+    let passwordRequired = false;
+    let systemAudioActive = false;
+    let recordingActive = false;
+    let joining = false;
+    let viewerRegistered = false;
+    let disconnectGraceTimer = null;
+    let reconnectTimer = null;
+    let reconnecting = false;
+    let intentionallyLeaving = false;
+    let roomClosedByHost = false;
+    let sessionEventController = null;
+    let sessionEventRetryTimer = null;
+    let activeGuestName = '';
+    let activePassword = '';
+    let videoFrameWatchId = null;
+    let lastVideoFrameAt = 0;
+    let lastDecodedFrames = 0;
+    const isMobileViewer = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 1024);
+    // This placeholder is replaced by the embedded HTTP server. Keeping the
+    // protocol version in Rust as the single source of truth prevents a stale
+    // viewer bundle from entering an endless upgrade/reload loop.
+    const VIEWER_PROTOCOL_VERSION = Number('__ORBSHARE_VIEWER_PROTOCOL_VERSION__');
+    const AUDIO_RELAY_SLOTS = 24;
+    // Use a versioned key so existing two-mode preferences do not keep new
+    // mobile viewers stuck on the old extreme fit/fill choices.
+    const savedViewMode = localStorage.getItem('orbshare-view-mode-v3');
+    let viewMode = ['fit', 'zoom', 'fill'].includes(savedViewMode)
+      ? savedViewMode
+      : (isMobileViewer ? 'zoom' : 'fit');
+
+    const params = new URLSearchParams(window.location.search);
+    // The viewer page and the HTTP signaling API live on the SAME server,
+    // so when ?signaling= is missing we can safely fall back to the page
+    // origin. This lets LAN users open http://<host>:8899/ directly.
+    const signalingUrl = params.get('signaling') || window.location.origin;
+    // Stable guest id for the whole page lifetime; sent with every
+    // signaling request so the host can route ICE candidates back.
+    const createGuestId = () => 'browser-'
+      + Math.random().toString(36).slice(2, 10)
+      + Date.now().toString(36);
+    let guestId = params.get('guest_id') || createGuestId();
+    let participantId = params.get('participant_id') || '';
+    if (!participantId) {
+      try { participantId = sessionStorage.getItem('orbshare-participant-id') || ''; } catch (_) {}
+    }
+    if (!participantId) participantId = 'participant-' + createGuestId().slice(8);
+    try { sessionStorage.setItem('orbshare-participant-id', participantId); } catch (_) {}
+
+    const reloadForViewerUpdate = (serverVersion = VIEWER_PROTOCOL_VERSION) => {
+      const normalizedVersion = Number(serverVersion);
+      const reloadKey = 'orbshare-viewer-update-at-' + normalizedVersion;
+      const now = Date.now();
+      let previousReloadAt = 0;
+      try { previousReloadAt = Number(sessionStorage.getItem(reloadKey) || 0); } catch (_) {}
+
+      // A correctly updated page only needs one reload. If the versions still
+      // disagree shortly afterwards, stop here and show a useful message
+      // instead of continuously refreshing the whole browser window.
+      if (previousReloadAt && now - previousReloadAt < 30000) {
+        setStatus('idle', '观看页版本不一致');
+        setLobbyTitle('观看页需要更新');
+        setLobbyMessage('请重新启动发起端后，再刷新此页面');
+        setJoinError('网页版本 {viewer}，服务端版本 {server}', { viewer: VIEWER_PROTOCOL_VERSION, server: normalizedVersion });
+        joinBtn.disabled = true;
+        return false;
+      }
+
+      try { sessionStorage.setItem(reloadKey, String(now)); } catch (_) {}
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('viewer_v', String(normalizedVersion));
+      nextUrl.searchParams.set('_reload', String(now));
+      window.location.replace(nextUrl.toString());
+      return true;
+    };
+
+    let currentStatusKind = 'idle';
+    let currentStatusSource = '等待连接…';
+    let currentStatusVariables = undefined;
+    const setStatus = (kind, text, variables) => {
+      currentStatusKind = kind;
+      currentStatusSource = text;
+      currentStatusVariables = variables;
+      statusPill.className = 'pill ' + kind;
+      statusText.textContent = tr(text, variables);
+    };
+
+    const setRecordingActive = (active) => {
+      recordingActive = Boolean(active);
+      recordingChip.classList.toggle('hidden', !recordingActive);
+    };
+
+    const showToast = (msg) => {
+      toast.textContent = tr(msg);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1600);
+    };
+
+    const formatChatTime = (timestamp) => new Date(timestamp).toLocaleTimeString(uiLanguage, {
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+
+    const clearDanmaku = () => {
+      danmakuLayer.replaceChildren();
+    };
+
+    const updateDanmakuUi = () => {
+      danmakuToggle.classList.toggle('active', danmakuEnabled);
+      danmakuToggle.classList.toggle('off', !danmakuEnabled);
+      danmakuOnIcon.classList.toggle('hidden', !danmakuEnabled);
+      danmakuOffIcon.classList.toggle('hidden', danmakuEnabled);
+      const label = tr(danmakuEnabled ? '关闭弹幕' : '开启弹幕');
+      danmakuToggle.title = label;
+      danmakuToggle.setAttribute('aria-label', label);
+      danmakuToggle.setAttribute('aria-pressed', String(danmakuEnabled));
+    };
+
+    const pushDanmaku = (message) => {
+      if (!danmakuEnabled || !message?.content) return;
+      const normalized = String(message.content).replace(/\s+/g, ' ').trim();
+      if (!normalized) return;
+      const content = normalized.length > 80 ? normalized.slice(0, 80) + '…' : normalized;
+      const item = document.createElement('div');
+      item.className = 'danmaku-item' + (message.sender_role === 'Host' ? ' host' : '');
+      item.style.top = (9 + (danmakuLane++ % 7) * 10.5) + '%';
+      item.style.animationDuration = (8 + Math.min(5, content.length * 0.055)) + 's';
+      const sender = document.createElement('span');
+      sender.className = 'danmaku-sender';
+      sender.textContent = message.sender_name || tr('观看者');
+      const text = document.createElement('span');
+      text.textContent = content;
+      item.append(sender, text);
+      item.addEventListener('animationend', () => item.remove(), { once: true });
+      danmakuLayer.appendChild(item);
+      while (danmakuLayer.childElementCount > 24) danmakuLayer.firstElementChild?.remove();
+    };
+
+    danmakuToggle.addEventListener('click', () => {
+      danmakuEnabled = !danmakuEnabled;
+      localStorage.setItem('orbshare-danmaku-enabled', String(danmakuEnabled));
+      if (!danmakuEnabled) clearDanmaku();
+      updateDanmakuUi();
+      showToast(danmakuEnabled ? '弹幕已开启' : '弹幕已关闭');
+    });
+    updateDanmakuUi();
+
+    const laserMediaRect = () => {
+      const stageRect = stageInner.getBoundingClientRect();
+      let sourceWidth = 0;
+      let sourceHeight = 0;
+      if (!videoEl.classList.contains('hidden') && videoEl.videoWidth && videoEl.videoHeight) {
+        sourceWidth = videoEl.videoWidth;
+        sourceHeight = videoEl.videoHeight;
+      } else if (!mjpegEl.classList.contains('hidden') && mjpegEl.naturalWidth && mjpegEl.naturalHeight) {
+        sourceWidth = mjpegEl.naturalWidth;
+        sourceHeight = mjpegEl.naturalHeight;
+      }
+      if (!sourceWidth || !sourceHeight) return stageRect;
+      const fitScale = Math.min(stageRect.width / sourceWidth, stageRect.height / sourceHeight);
+      const fillScale = Math.max(stageRect.width / sourceWidth, stageRect.height / sourceHeight);
+      const scale = viewMode === 'fill' ? fillScale : fitScale * (viewMode === 'zoom' ? 1.2 : 1);
+      const width = sourceWidth * scale;
+      const height = sourceHeight * scale;
+      return {
+        left: stageRect.left + (stageRect.width - width) / 2,
+        top: stageRect.top + (stageRect.height - height) / 2,
+        width,
+        height,
+      };
+    };
+
+    const hideLaserPoint = () => {
+      laserDot.classList.remove('visible');
+      if (laserHideTimer) clearTimeout(laserHideTimer);
+      laserHideTimer = null;
+    };
+
+    const showLaserPoint = (x, y) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1) return;
+      const stageRect = stageInner.getBoundingClientRect();
+      const mediaRect = laserMediaRect();
+      laserDot.style.left = (mediaRect.left - stageRect.left + x * mediaRect.width) + 'px';
+      laserDot.style.top = (mediaRect.top - stageRect.top + y * mediaRect.height) + 'px';
+      laserDot.classList.add('visible');
+      if (laserHideTimer) clearTimeout(laserHideTimer);
+      laserHideTimer = setTimeout(hideLaserPoint, 900);
+    };
+
+    const handleLaserPayload = async (data) => {
+      try {
+        const buffer = data instanceof ArrayBuffer
+          ? data
+          : data instanceof Blob
+            ? await data.arrayBuffer()
+            : null;
+        if (!buffer || buffer.byteLength !== 8) return;
+        const view = new DataView(buffer);
+        showLaserPoint(view.getFloat32(0, true), view.getFloat32(4, true));
+      } catch (_) { /* stale pointer packets are intentionally ignored */ }
+    };
+
+    const sendLaserPoint = (x, y) => {
+      showLaserPoint(x, y);
+      if (!pointerChannel || pointerChannel.readyState !== 'open') return;
+      const payload = new ArrayBuffer(8);
+      const view = new DataView(payload);
+      view.setFloat32(0, x, true);
+      view.setFloat32(4, y, true);
+      try { pointerChannel.send(payload); } catch (_) { /* next movement retries */ }
+    };
+
+    const handleStageLaserPointer = (event) => {
+      if (!laserEnabled || event.target.closest('button') || roomClosedByHost) return;
+      const now = performance.now();
+      if (event.type === 'pointermove' && now - lastLaserSendAt < 40) return;
+      const rect = laserMediaRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+      if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      lastLaserSendAt = now;
+      sendLaserPoint(x, y);
+    };
+
+    laserToggle.addEventListener('click', () => {
+      laserEnabled = !laserEnabled;
+      laserToggle.classList.toggle('laser-on', laserEnabled);
+      laserToggle.setAttribute('aria-pressed', String(laserEnabled));
+      laserToggle.title = tr(laserEnabled ? '关闭激光笔' : '开启激光笔');
+      laserToggle.setAttribute('aria-label', laserToggle.title);
+      stageInner.classList.toggle('laser-enabled', laserEnabled);
+      if (!laserEnabled) hideLaserPoint();
+      showToast(laserEnabled ? '激光笔已开启，移动指针即可标示' : '激光笔已关闭');
+    });
+    stageInner.addEventListener('pointerdown', handleStageLaserPointer);
+    stageInner.addEventListener('pointermove', handleStageLaserPointer);
+
+    const appendChatMessage = (message, showDanmaku = true) => {
+      if (!message || document.getElementById('chat-' + message.message_id)) return;
+      chatEmpty.classList.add('hidden');
+      const item = document.createElement('div');
+      item.className = 'chat-item';
+      item.id = 'chat-' + message.message_id;
+      const avatar = document.createElement('div');
+      avatar.className = 'chat-avatar' + (message.sender_role === 'Host' ? ' host' : '');
+      avatar.textContent = message.sender_role === 'Host'
+        ? tr('主')
+        : String(message.sender_name || tr('访')).trim().slice(0, 1).toUpperCase();
+      const content = document.createElement('div');
+      content.className = 'chat-content';
+      const meta = document.createElement('div');
+      meta.className = 'chat-meta';
+      const sender = document.createElement('span');
+      sender.textContent = message.sender_name || tr('观看者');
+      if (message.sender_role === 'Host') sender.className = 'host';
+      const time = document.createElement('span');
+      time.className = 'chat-time';
+      time.dataset.timestamp = String(message.sent_at || Date.now());
+      time.textContent = formatChatTime(message.sent_at || Date.now());
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble' + (message.sender_role === 'Host' ? ' host' : '');
+      bubble.textContent = message.content || '';
+      meta.appendChild(sender);
+      if (message.sender_role === 'Host') {
+        const badge = document.createElement('span');
+        badge.className = 'chat-host-badge';
+        badge.textContent = tr('主持人');
+        meta.appendChild(badge);
+      }
+      meta.appendChild(time);
+      content.append(meta, bubble);
+      item.append(avatar, content);
+      chatMessages.appendChild(item);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      if (showDanmaku) pushDanmaku(message);
+    };
+
+    const setChatHistory = (messages) => {
+      for (const message of Array.isArray(messages) ? messages : []) appendChatMessage(message, false);
+    };
+
+    const setChatOpen = (open) => {
+      chatPanel.classList.toggle('open', open);
+      if (open) {
+        chatInput.focus({ preventScroll: true });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else {
+        setEmojiOpen(false);
+      }
+    };
+
+    const setEmojiOpen = (open) => {
+      emojiPicker.classList.toggle('hidden', !open);
+      emojiToggle.classList.toggle('active', open);
+      emojiToggle.setAttribute('aria-expanded', String(open));
+    };
+
+    const updateChatComposer = () => {
+      const length = Array.from(chatInput.value).length;
+      chatCount.textContent = length + '/500';
+      chatSend.disabled = !chatInput.value.trim();
+    };
+
+    const insertChatEmoji = (emoji) => {
+      const start = chatInput.selectionStart ?? chatInput.value.length;
+      const end = chatInput.selectionEnd ?? start;
+      const next = chatInput.value.slice(0, start) + emoji + chatInput.value.slice(end);
+      if (Array.from(next).length > 500) return;
+      chatInput.value = next;
+      updateChatComposer();
+      const cursor = start + emoji.length;
+      chatInput.focus({ preventScroll: true });
+      chatInput.setSelectionRange(cursor, cursor);
+    };
+
+    for (const emoji of commonChatEmojis) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'emoji-item';
+      button.textContent = emoji;
+      button.setAttribute('aria-label', tr('插入表情 {emoji}', { emoji }));
+      button.addEventListener('click', () => insertChatEmoji(emoji));
+      emojiGrid.appendChild(button);
+    }
+
+    chatToggle.addEventListener('click', () => setChatOpen(!chatPanel.classList.contains('open')));
+    chatClose.addEventListener('click', () => setChatOpen(false));
+    emojiToggle.addEventListener('click', () => setEmojiOpen(emojiPicker.classList.contains('hidden')));
+    emojiPickerClose.addEventListener('click', () => setEmojiOpen(false));
+    chatInput.addEventListener('input', () => {
+      chatError.textContent = '';
+      updateChatComposer();
+    });
+    chatInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        chatForm.requestSubmit();
+      }
+    });
+    chatForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      chatError.textContent = '';
+      const content = chatInput.value.trim();
+      if (!content) return;
+      if (!controlChannel || controlChannel.readyState !== 'open') {
+        chatError.textContent = tr('聊天通道正在连接，请稍后再试');
+        return;
+      }
+      try {
+        controlChannel.send(JSON.stringify({ type: 'chat_send', content }));
+        chatInput.value = '';
+        setEmojiOpen(false);
+        updateChatComposer();
+      } catch (_) {
+        chatError.textContent = tr('消息发送失败，请重试');
+      }
+    });
+    updateChatComposer();
+
+    const updateMicrophoneUi = () => {
+      micToggle.classList.toggle('active', microphoneEnabled && !hostMuted);
+      micToggle.classList.toggle('blocked', hostMuted);
+      const label = tr(hostMuted ? '主持人已将你禁言' : microphoneEnabled ? '关闭麦克风' : '开启麦克风');
+      micToggle.title = label;
+      micToggle.setAttribute('aria-label', label);
+    };
+
+    const sendMicrophoneState = () => {
+      if (controlChannel?.readyState === 'open') {
+        controlChannel.send(JSON.stringify({
+          type: 'audio_state',
+          enabled: microphoneEnabled && !hostMuted,
+        }));
+      }
+    };
+
+    const stopMicrophone = (announce = true) => {
+      const track = microphoneTrack;
+      microphoneTrack = null;
+      microphoneEnabled = false;
+      if (track) track.stop();
+      if (audioSender) audioSender.replaceTrack(null).catch(() => {});
+      updateMicrophoneUi();
+      if (announce) sendMicrophoneState();
+    };
+
+    const toggleMicrophone = async () => {
+      if (microphoneEnabled) {
+        stopMicrophone();
+        return;
+      }
+      if (hostMuted) {
+        showToast('主持人已将你禁言');
+        return;
+      }
+      if (!audioSender) {
+        showToast('音频通道正在连接，请稍后再试');
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showToast('当前 HTTP 页面无法使用麦克风，请使用 OrbShare 客户端');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: false,
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        const track = stream.getAudioTracks()[0];
+        if (!track) throw new Error(tr('没有检测到可用麦克风'));
+        await audioSender.replaceTrack(track);
+        microphoneTrack = track;
+        microphoneEnabled = true;
+        track.onended = () => stopMicrophone();
+        updateMicrophoneUi();
+        sendMicrophoneState();
+        showToast('麦克风已开启');
+      } catch (error) {
+        stopMicrophone();
+        showToast(describeMicrophoneError(error));
+      }
+    };
+
+    micToggle.addEventListener('click', () => void toggleMicrophone());
+
+    const updateHandUi = () => {
+      handToggle.classList.toggle('raised', handRaised);
+      handToggle.disabled = handActionPending;
+      const label = tr(handActionPending ? '举手状态处理中' : handRaised ? '放下手' : '向主持人举手');
+      handToggle.title = label;
+      handToggle.setAttribute('aria-label', label);
+      handToggle.setAttribute('aria-pressed', String(handRaised));
+    };
+
+    const sendHandState = () => {
+      if (controlChannel?.readyState === 'open') {
+        controlChannel.send(JSON.stringify({ type: 'raise_hand', raised: handRaised }));
+      }
+    };
+
+    const toggleHandRaised = () => {
+      if (handActionPending) return;
+      if (!controlChannel || controlChannel.readyState !== 'open') {
+        showToast('控制通道正在连接，请稍后再举手');
+        return;
+      }
+      handRaised = !handRaised;
+      handActionPending = true;
+      updateHandUi();
+      try {
+        sendHandState();
+        showToast(handRaised ? '已向主持人举手' : '已放下手');
+      } catch (_) {
+        handActionPending = false;
+        updateHandUi();
+        showToast('举手状态发送失败，请重试');
+        return;
+      }
+      setTimeout(() => {
+        handActionPending = false;
+        updateHandUi();
+      }, 1500);
+    };
+
+    handToggle.addEventListener('click', toggleHandRaised);
+    document.addEventListener('pointerdown', () => {
+      if (audioEl.srcObject) audioEl.play().catch(() => {});
+    }, { passive: true });
+    updateMicrophoneUi();
+    updateHandUi();
+
+    const armFirstFrameTimer = (reason) => {
+      if (firstFrameTimer) clearTimeout(firstFrameTimer);
+      firstFrameTimer = setTimeout(() => {
+        if (!isLive) {
+          setStatus('err', '{reason}: 首帧超时', { reason: tr(reason) });
+          setOverlayCopy('等待视频流超时', '请检查主机是否已开始投屏。');
+        }
+      }, 8000);
+    };
+
+    const clearFirstFrameTimer = () => {
+      if (firstFrameTimer) { clearTimeout(firstFrameTimer); firstFrameTimer = null; }
+    };
+
+    const hidePendingOverlay = () => {
+      overlayPending.classList.add('hidden');
+    };
+
+    const showVideo = () => {
+      hidePendingOverlay();
+      overlayEnded.classList.add('hidden');
+      videoEl.classList.remove('hidden');
+      mjpegEl.classList.add('hidden');
+      document.body.classList.add('viewer-live');
+    };
+
+    const showMjpeg = () => {
+      hidePendingOverlay();
+      overlayEnded.classList.add('hidden');
+      mjpegEl.classList.remove('hidden');
+      videoEl.classList.add('hidden');
+      document.body.classList.add('viewer-live');
+    };
+
+    const showEnded = () => {
+      overlayPending.classList.add('hidden');
+      overlayEnded.classList.remove('hidden');
+      document.body.classList.remove('viewer-live');
+    };
+
+    const applyViewMode = () => {
+      const labels = { fit: tr('完整'), zoom: tr('适中'), fill: tr('填满') };
+      stageInner.classList.toggle('media-zoom', viewMode === 'zoom');
+      stageInner.classList.toggle('media-fill', viewMode === 'fill');
+      viewModeBtn.textContent = labels[viewMode];
+      viewModeBtn.title = tr('当前：{mode}，点击切换显示方式', { mode: labels[viewMode] });
+    };
+
+    const toggleViewMode = () => {
+      const order = ['fit', 'zoom', 'fill'];
+      viewMode = order[(order.indexOf(viewMode) + 1) % order.length];
+      localStorage.setItem('orbshare-view-mode-v3', viewMode);
+      applyViewMode();
+      const messages = {
+        fit: '完整显示共享画面',
+        zoom: '适中放大，减少两侧留黑',
+        fill: '填满窗口，画面边缘可能裁切',
+      };
+      showToast(messages[viewMode]);
+    };
+
+    const refreshLanguageUi = () => {
+      applyStaticTranslations();
+      setStatus(currentStatusKind, currentStatusSource, currentStatusVariables);
+      setOverlayCopy(overlayTitleSource, overlayMessageSource, overlayMessageVariables);
+      setEndedCopy(endedTitleSource, endedMessageSource);
+      setRoleState(currentRoleState);
+      setRoomSubtitle(roomSubtitleSource, roomSubtitleVariables);
+      setLobbyTitle(lobbyTitleSource, lobbyTitleIsRoomName);
+      setLiveRoomTitle(liveRoomTitleSource, liveRoomTitleIsRoomName);
+      setJoinError(joinErrorSource, joinErrorVariables);
+      if (lobbyHostIp) setLobbyMeta(lobbyHostIp, lobbyIncludesSystemAudio);
+      else lobbyRoomMeta.textContent = tr(lobbyMetaSource);
+      updateDanmakuUi();
+      updateMicrophoneUi();
+      updateHandUi();
+      laserToggle.title = tr(laserEnabled ? '关闭激光笔' : '开启激光笔');
+      laserToggle.setAttribute('aria-label', laserToggle.title);
+      applyViewMode();
+      document.querySelectorAll('.chat-avatar.host').forEach((element) => { element.textContent = tr('主'); });
+      document.querySelectorAll('.chat-host-badge').forEach((element) => { element.textContent = tr('主持人'); });
+      document.querySelectorAll('.chat-time[data-timestamp]').forEach((element) => {
+        element.textContent = formatChatTime(Number(element.dataset.timestamp));
+      });
+      for (const button of emojiGrid.querySelectorAll('.emoji-item')) {
+        button.setAttribute('aria-label', tr('插入表情 {emoji}', { emoji: button.textContent || '' }));
+      }
+      if (!meetingApp.classList.contains('hidden') || joining) return;
+      joinBtn.textContent = tr(activeGuestName ? '重新加入' : '加入会议');
+    };
+
+    const switchViewerLanguage = () => {
+      uiLanguage = uiLanguage === 'zh-CN' ? 'en-US' : 'zh-CN';
+      try { localStorage.setItem(LANGUAGE_STORAGE_KEY, uiLanguage); } catch (_) {}
+      refreshLanguageUi();
+    };
+
+    joinLanguageSwitch.addEventListener('click', switchViewerLanguage);
+    meetingLanguageSwitch.addEventListener('click', switchViewerLanguage);
+
+    applyViewMode();
+    refreshLanguageUi();
+    viewModeBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleViewMode();
+    });
+    stageInner.addEventListener('dblclick', toggleViewMode);
+    orientationDismiss.addEventListener('click', () => {
+      orientationHint.style.display = 'none';
+      sessionStorage.setItem('orbshare-orientation-hint-dismissed', '1');
+    });
+    if (sessionStorage.getItem('orbshare-orientation-hint-dismissed') === '1') {
+      orientationHint.style.display = 'none';
+    }
+
+    const lockLandscapeIfSupported = async () => {
+      try {
+        if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+      } catch (_) { /* iPhone Safari does not expose orientation locking */ }
+    };
+
+    const preferLandscapeOnJoin = async () => {
+      if (!isMobileViewer || window.matchMedia('(orientation: landscape)').matches) return;
+      // Android browsers can enter fullscreen and lock landscape from this
+      // join-button gesture. iPhone Safari intentionally does not expose
+      // orientation locking, so it falls back to the in-player rotate hint.
+      const request = document.documentElement.requestFullscreen
+        || document.documentElement.webkitRequestFullscreen;
+      if (!request) return;
+      try {
+        await request.call(document.documentElement);
+        await lockLandscapeIfSupported();
+      } catch (_) { /* best effort */ }
+    };
+
+    const clearDisconnectGrace = () => {
+      if (disconnectGraceTimer) {
+        clearTimeout(disconnectGraceTimer);
+        disconnectGraceTimer = null;
+      }
+    };
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    const mediaIsMoving = () => isLive && Date.now() - lastVideoFrameAt < 4500;
+
+    const restoreLiveUi = () => {
+      clearDisconnectGrace();
+      clearReconnectTimer();
+      reconnecting = false;
+      setRoleState('已连接');
+      setStatus('live', '正在观看 · 高清画面');
+      h264FirstFrame ? showVideo() : showMjpeg();
+    };
+
+    const confirmDisconnected = () => {
+      clearDisconnectGrace();
+      const check = () => {
+        if (!pc) return;
+        if (pc.connectionState === 'connected') {
+          if (isLive) restoreLiveUi();
+          return;
+        }
+        // Safari can report a temporary WebRTC disconnect while decoded
+        // frames are still arriving. Treat moving media as the source of
+        // truth and keep checking instead of covering a healthy picture.
+        if (mediaIsMoving()) {
+          setRoleState('画面正常');
+          setStatus('live', '正在观看 · 高清画面');
+          h264FirstFrame ? showVideo() : showMjpeg();
+          disconnectGraceTimer = setTimeout(check, 3000);
+          return;
+        }
+        setRoleState('连接已断开');
+        setStatus('err', pc.connectionState === 'failed' ? '连接失败' : '连接已断开');
+        setOverlayCopy('连接已断开', '网络连接未恢复，正在自动重新加入会议。');
+        overlayPending.classList.remove('hidden');
+        if (!document.hidden) scheduleReconnect('连接中断', 500);
+      };
+      // A short Wi-Fi handoff or iOS radio pause should not be presented as
+      // a completed disconnect. Only confirm it after media has also stopped.
+      disconnectGraceTimer = setTimeout(check, 6000);
+    };
+
+    const watchVideoFrames = () => {
+      if (!videoEl.requestVideoFrameCallback) return;
+      const watchedPc = pc;
+      const onFrame = () => {
+        if (!pc || pc !== watchedPc) return;
+        lastVideoFrameAt = Date.now();
+        if (pc && pc.connectionState === 'disconnected') {
+          setStatus('live', '正在观看 · 高清画面');
+          showVideo();
+        }
+        videoFrameWatchId = videoEl.requestVideoFrameCallback(onFrame);
+      };
+      videoFrameWatchId = videoEl.requestVideoFrameCallback(onFrame);
+    };
+
+    guestNameInput.value = localStorage.getItem('orbshare-guest-name') || '';
+    loadRoomInfo();
+    joinForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (joining) return;
+      void preferLandscapeOnJoin();
+      const guestName = guestNameInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!guestName) {
+        setJoinError('请输入你的名称');
+        guestNameInput.focus();
+        return;
+      }
+      if (passwordRequired && !password) {
+        setJoinError('请输入会议密码');
+        passwordInput.focus();
+        return;
+      }
+      localStorage.setItem('orbshare-guest-name', guestName);
+      intentionallyLeaving = false;
+      activeGuestName = guestName;
+      activePassword = password;
+      joining = true;
+      joinBtn.disabled = true;
+      joinBtn.innerHTML = '<span class="spinner" style="width:16px;height:16px"></span>' + tr('正在加入…');
+      setJoinError();
+      try {
+        await bootstrap(guestName, password);
+        joining = false;
+      } catch (error) {
+        cleanup();
+        setJoinError(error && error.i18nSource ? error.i18nSource : String(error && error.message ? error.message : error), error && error.i18nVariables);
+        joinBtn.disabled = false;
+        joinBtn.textContent = tr('重新加入');
+        joining = false;
+      }
+    });
+
+    async function loadRoomInfo() {
+      try {
+        const response = await fetch(signalingUrl + '/room-info', { cache: 'no-store' });
+        if (!response.ok) throw meetingError('会议服务暂不可用');
+        const info = await response.json();
+        if (Number(info.viewer_protocol_version) !== VIEWER_PROTOCOL_VERSION) {
+          reloadForViewerUpdate(info.viewer_protocol_version);
+          return;
+        }
+        passwordRequired = Boolean(info.requires_password);
+        systemAudioActive = Boolean(info.system_audio_active);
+        setRecordingActive(info.recording_active);
+        systemAudioChip.classList.toggle('hidden', !systemAudioActive);
+        setLobbyTitle(info.room_name || '内部屏幕会议', Boolean(info.room_name));
+        setLobbyMeta(info.host_ip || location.hostname, systemAudioActive);
+        setLiveRoomTitle(info.room_name || '屏幕共享', Boolean(info.room_name));
+        passwordField.classList.toggle('hidden', !passwordRequired);
+        guestNameInput.focus();
+      } catch (error) {
+        setLobbyTitle('无法读取会议');
+        setLobbyMessage('请确认主机仍在共享屏幕');
+        setJoinError(error && error.i18nSource ? error.i18nSource : String(error && error.message ? error.message : error), error && error.i18nVariables);
+        joinBtn.disabled = true;
+      }
+    }
+
+    async function bootstrap(guestName, password) {
+      pc = new RTCPeerConnection({ iceServers: [] });
+
+      const transceiver = pc.addTransceiver('video', { direction: 'recvonly' });
+      const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
+      audioSender = audioTransceiver.sender;
+      for (let slot = 1; slot < AUDIO_RELAY_SLOTS; slot += 1) {
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+      }
+      try {
+        const caps = RTCRtpReceiver.getCapabilities?.('video');
+        const codecs = caps?.codecs ?? [];
+        const h264 = codecs.filter((c) => /video\/H264/i.test(c.mimeType));
+        const rtx = codecs.filter((c) => /video\/rtx/i.test(c.mimeType));
+        if (h264.length && transceiver.setCodecPreferences) {
+          transceiver.setCodecPreferences([...h264, ...rtx]);
+        }
+      } catch (e) { /* best effort */ }
+
+      // The host only accepts a guest-created video DataChannel in MJPEG
+      // compatibility mode. Creating it before the offer keeps both media
+      // transports available without a second negotiation.
+      const videoChannel = pc.createDataChannel('video', {
+        ordered: false,
+        maxRetransmits: 0,
+      });
+      videoChannel.binaryType = 'arraybuffer';
+      videoChannel.onmessage = handleMjpeg;
+      videoChannel.onopen = () => {
+        if (!h264FirstFrame) {
+          setStatus('ok', '视频连接已建立');
+          armFirstFrameTimer('视频连接已建立');
+        }
+      };
+
+      pointerChannel = pc.createDataChannel('pointer', {
+        ordered: false,
+        maxRetransmits: 0,
+      });
+      pointerChannel.binaryType = 'arraybuffer';
+      const outgoingPointerChannel = pointerChannel;
+      pointerChannel.onclose = () => {
+        if (pointerChannel === outgoingPointerChannel) pointerChannel = null;
+      };
+
+      pc.ontrack = (event) => {
+        const track = event.track;
+        if (track.kind === 'audio') {
+          if (!remoteAudioStream.getAudioTracks().some((existing) => existing.id === track.id)) {
+            remoteAudioStream.addTrack(track);
+          }
+          track.onended = () => remoteAudioStream.removeTrack(track);
+          audioEl.srcObject = remoteAudioStream;
+          audioEl.play().catch(() => {
+            showToast('点击页面以播放会议声音');
+          });
+          return;
+        }
+        try { track.contentHint = 'detail'; } catch (_) {}
+        const stream = event.streams[0] ?? new MediaStream([event.track]);
+        videoEl.srcObject = stream;
+        const onReady = () => {
+          clearFirstFrameTimer();
+          h264FirstFrame = true;
+          isLive = true;
+          lastVideoFrameAt = Date.now();
+          setStatus('live', '正在观看 · 高清画面');
+          showVideo();
+        };
+        videoEl.onloadeddata = onReady;
+        videoEl.onplaying = onReady;
+        watchVideoFrames();
+        videoEl.play().catch(() => {});
+        armFirstFrameTimer('高清视频已连接');
+      };
+
+      pc.onconnectionstatechange = () => {
+        connectionState = pc.connectionState;
+        setRoleState(connectionState === 'connected'
+          ? '已连接'
+          : connectionState === 'connecting'
+            ? '连接中'
+            : connectionState === 'disconnected'
+              ? '正在恢复'
+              : connectionState === 'failed'
+                ? '连接失败'
+                : '准备中');
+        if (connectionState === 'connected') {
+          clearDisconnectGrace();
+          if (isLive) {
+            restoreLiveUi();
+          } else {
+            setStatus('ok', '已连接 · 等待视频帧');
+            overlayPending.classList.remove('hidden');
+            armFirstFrameTimer('已连接');
+          }
+        } else if (connectionState === 'connecting') {
+          clearDisconnectGrace();
+          setStatus('idle', '正在连接…');
+          setOverlayCopy('正在连接…', '请稍候，正在连接会议画面。');
+        } else if (connectionState === 'disconnected') {
+          setRoleState('正在恢复');
+          setStatus('idle', '网络波动 · 正在恢复');
+          confirmDisconnected();
+        } else if (connectionState === 'failed') {
+          confirmDisconnected();
+        }
+      };
+
+      // ICE candidates may start firing right after setLocalDescription,
+      // before the /offer round-trip completes. Buffer them until the
+      // host has registered our guest_id, then flush.
+      const pendingOutgoingIce = [];
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          const payload = {
+            candidate: event.candidate.candidate,
+            sdp_mid: event.candidate.sdpMid,
+            sdp_mline_index: event.candidate.sdpMLineIndex,
+          };
+          if (registered) {
+            sendIce(payload);
+          } else {
+            pendingOutgoingIce.push(payload);
+          }
+        }
+      };
+
+      let registered = false;
+      const sendIce = (payload) => {
+        fetch(signalingUrl + '/ice?guest_id=' + encodeURIComponent(guestId), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      };
+
+      pc.ondatachannel = (event) => {
+        const ch = event.channel;
+        if (ch.label === 'video') {
+          ch.binaryType = 'arraybuffer';
+          ch.onmessage = handleMjpeg;
+          ch.onopen = () => {
+            if (!h264FirstFrame) {
+              setStatus('ok', '视频连接已建立');
+              armFirstFrameTimer('视频连接已建立');
+            }
+          };
+        } else if (ch.label === 'pointer') {
+          ch.binaryType = 'arraybuffer';
+          ch.onmessage = (message) => void handleLaserPayload(message.data);
+        } else if (ch.label === 'control') {
+          controlChannel = ch;
+          ch.onopen = () => {
+            chatError.textContent = '';
+            sendMicrophoneState();
+            sendHandState();
+          };
+          ch.onclose = () => {
+            if (controlChannel === ch) controlChannel = null;
+          };
+          ch.onmessage = (message) => void handleControlMessage(message.data);
+        }
+      };
+
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        const res = await fetch(
+          signalingUrl + '/offer?guest_id=' + encodeURIComponent(guestId),
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              sdp: JSON.stringify(offer),
+              guest_name: guestName,
+              participant_id: participantId,
+              viewer_protocol_version: VIEWER_PROTOCOL_VERSION,
+              password_hash: password ? sha256(password) : '',
+            }),
+          }
+        );
+        if (res.status === 401) {
+          throw meetingError('会议密码不正确');
+        }
+        if (res.status === 426) {
+          const update = await res.json().catch(() => ({}));
+          setStatus('idle', '正在更新观看页…');
+          reloadForViewerUpdate(update.viewer_protocol_version);
+          throw meetingError('观看页版本已更新，正在重新加载…');
+        }
+        if (res.status === 403) {
+          const response = await res.json().catch(() => ({}));
+          if (response.error === 'participant_removed') {
+            handleRemovedByHost();
+            throw meetingError('你已被主持人移出会议');
+          }
+        }
+        if (res.status === 409) {
+          const response = await res.json().catch(() => ({}));
+          if (response.error === 'room_full') {
+            throw meetingError('会议人数已满（最多 {count} 位观看者）', { count: response.max_guests || 10 });
+          }
+        }
+        if (!res.ok) {
+          throw meetingError('会议连接服务返回 {status}（主机可能尚未开始共享）', { status: res.status });
+        }
+        const data = await res.json();
+        setRecordingActive(data.recording_active);
+        setLiveRoomTitle(data.room_name || '屏幕共享', Boolean(data.room_name));
+        setRoomSubtitle('{host} · 观看端已连接{audio}', {
+          host: data.host_ip,
+          audio: systemAudioActive ? ' · ' + tr('系统声音') : '',
+        });
+        setChatHistory(data.chat_history);
+        await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.sdp)));
+        joinScreen.classList.add('hidden');
+        meetingApp.classList.remove('hidden');
+
+        // Host is now aware of us — flush any ICE candidates that were
+        // buffered during the offer round-trip.
+        registered = true;
+        viewerRegistered = true;
+        for (const payload of pendingOutgoingIce.splice(0)) sendIce(payload);
+
+        startIcePolling();
+        startSessionEventPolling();
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    function scheduleReconnect(reason, delay = 800) {
+      clearReconnectTimer();
+      if (roomClosedByHost || intentionallyLeaving || reconnecting || document.hidden || !activeGuestName) return;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        void reconnectViewer(reason);
+      }, delay);
+    }
+
+    function stopSessionEventPolling() {
+      if (sessionEventRetryTimer) {
+        clearTimeout(sessionEventRetryTimer);
+        sessionEventRetryTimer = null;
+      }
+      if (sessionEventController) {
+        sessionEventController.abort();
+        sessionEventController = null;
+      }
+    }
+
+    function handleRoomClosedByHost() {
+      if (roomClosedByHost) return;
+      setRecordingActive(false);
+      handRaised = false;
+      handActionPending = false;
+      updateHandUi();
+      roomClosedByHost = true;
+      intentionallyLeaving = true;
+      reconnecting = false;
+      viewerRegistered = false;
+      clearReconnectTimer();
+      clearDisconnectGrace();
+      clearFirstFrameTimer();
+      disposePeerLocally();
+      setRoleState('会议已结束');
+      setStatus('idle', '会议已结束');
+      setRoomSubtitle('房主已结束本次会议');
+      setEndedCopy('投屏已结束', '房主已停止共享，当前连接已经关闭。');
+      showEnded();
+      showToast('房主已结束会议');
+      // Native iPhone video fullscreen sits above the page DOM. Exit it so
+      // the terminal meeting overlay is visible on the phone.
+      void exitFullscreen().then(showEnded, showEnded);
+    }
+
+    function handleRemovedByHost() {
+      if (roomClosedByHost) return;
+      setRecordingActive(false);
+      handRaised = false;
+      handActionPending = false;
+      updateHandUi();
+      roomClosedByHost = true;
+      intentionallyLeaving = true;
+      reconnecting = false;
+      viewerRegistered = false;
+      clearReconnectTimer();
+      clearDisconnectGrace();
+      clearFirstFrameTimer();
+      disposePeerLocally();
+      setRoleState('已被移出');
+      setStatus('err', '已被移出会议');
+      setRoomSubtitle('主持人已将你移出本次会议');
+      setEndedCopy('已被移出会议', '主持人已结束你的观看权限，本次会议中无法自动重新加入。');
+      showEnded();
+      showToast('你已被主持人移出会议');
+      void exitFullscreen().then(showEnded, showEnded);
+    }
+
+    async function handleControlMessage(data) {
+      try {
+        const text = typeof data === 'string'
+          ? data
+          : data instanceof Blob
+            ? await data.text()
+            : new TextDecoder().decode(data);
+        const message = JSON.parse(text);
+        if (message.type === 'room_closed') handleRoomClosedByHost();
+        else if (message.type === 'removed_by_host') handleRemovedByHost();
+        else if (message.type === 'chat_message') appendChatMessage(message.message);
+        else if (message.type === 'chat_error') chatError.textContent = tr(message.message || '消息发送失败');
+        else if (message.type === 'recording_state') setRecordingActive(message.active);
+        else if (message.type === 'share_source_state') {
+          if (message.state === 'switching') {
+            setStatus('live', '正在切换共享内容');
+            showToast('主持人正在切换共享内容…');
+          } else {
+            setStatus('live', '正在观看 · 高清画面');
+            showToast('共享内容已切换');
+          }
+        }
+        else if (message.type === 'hand_state') {
+          handRaised = Boolean(message.raised);
+          handActionPending = false;
+          updateHandUi();
+        }
+        else if (message.type === 'set_muted') {
+          hostMuted = Boolean(message.muted);
+          if (hostMuted) {
+            stopMicrophone(false);
+            sendMicrophoneState();
+            showToast('主持人已将你禁言');
+          } else {
+            showToast('主持人已允许你发言');
+          }
+          updateMicrophoneUi();
+        }
+      } catch (_) { /* ignore unknown control messages */ }
+    }
+
+    function startSessionEventPolling() {
+      stopSessionEventPolling();
+      if (roomClosedByHost || intentionallyLeaving) return;
+      const controller = new AbortController();
+      sessionEventController = controller;
+      fetch(signalingUrl + '/events?guest_id=' + encodeURIComponent(guestId), {
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error(tr('事件通道不可用'));
+          const message = await response.json();
+          if (message.type === 'room_closed') handleRoomClosedByHost();
+          else if (message.type === 'removed_by_host') handleRemovedByHost();
+        })
+        .catch(() => {
+          if (controller.signal.aborted || roomClosedByHost || intentionallyLeaving) return;
+          sessionEventRetryTimer = setTimeout(startSessionEventPolling, 1500);
+        })
+        .finally(() => {
+          if (sessionEventController === controller) sessionEventController = null;
+        });
+    }
+
+    function disposePeerLocally() {
+      stopSessionEventPolling();
+      stopIcePolling();
+      clearDisconnectGrace();
+      if (videoFrameWatchId !== null && videoEl.cancelVideoFrameCallback) {
+        videoEl.cancelVideoFrameCallback(videoFrameWatchId);
+        videoFrameWatchId = null;
+      }
+      const oldPc = pc;
+      pc = null;
+      controlChannel = null;
+      pointerChannel = null;
+      stopMicrophone(false);
+      audioSender = null;
+      if (oldPc) {
+        oldPc.onconnectionstatechange = null;
+        oldPc.onicecandidate = null;
+        oldPc.ontrack = null;
+        oldPc.ondatachannel = null;
+        try { oldPc.close(); } catch (_) {}
+      }
+      videoEl.onloadeddata = null;
+      videoEl.onplaying = null;
+      videoEl.srcObject = null;
+      audioEl.srcObject = null;
+      remoteAudioStream = new MediaStream();
+      clearDanmaku();
+      hideLaserPoint();
+      h264FirstFrame = false;
+      isLive = false;
+      lastVideoFrameAt = 0;
+      lastDecodedFrames = 0;
+      if (mjpegObjectUrl) {
+        URL.revokeObjectURL(mjpegObjectUrl);
+        mjpegObjectUrl = null;
+      }
+    }
+
+    async function reconnectViewer(reason) {
+      if (roomClosedByHost || intentionallyLeaving || reconnecting || document.hidden || !activeGuestName) return;
+      if (mediaIsMoving()) {
+        restoreLiveUi();
+        startIcePolling();
+        videoEl.play().catch(() => {});
+        if (pc?.connectionState !== 'connected') {
+          scheduleReconnect('连接状态仍在恢复', 4000);
+        }
+        return;
+      }
+
+      reconnecting = true;
+      clearReconnectTimer();
+      clearDisconnectGrace();
+      setRoleState('正在恢复');
+      setStatus('idle', '正在恢复连接…');
+      setOverlayCopy('正在恢复连接…', '{reason}，正在自动重新加入会议。', { reason: tr(reason) });
+      overlayPending.classList.remove('hidden');
+
+      const previousGuestId = guestId;
+      viewerRegistered = false;
+      try {
+        const leaveRequest = fetch(
+          signalingUrl + '/leave?guest_id=' + encodeURIComponent(previousGuestId),
+          { method:'POST', cache:'no-store', keepalive:true }
+        ).catch(() => null);
+        await Promise.race([
+          leaveRequest,
+          new Promise((resolve) => setTimeout(resolve, 1200)),
+        ]);
+
+        disposePeerLocally();
+        guestId = createGuestId();
+        await bootstrap(activeGuestName, activePassword);
+        reconnecting = false;
+        joining = false;
+        showToast('连接已恢复');
+      } catch (_) {
+        if (roomClosedByHost || intentionallyLeaving) {
+          reconnecting = false;
+          return;
+        }
+        disposePeerLocally();
+        reconnecting = false;
+        setStatus('idle', '等待网络恢复');
+        setOverlayCopy('暂时无法恢复连接', '保持页面打开，网络恢复后会自动重新加入。');
+        scheduleReconnect('网络仍未恢复', 3000);
+      }
+    }
+
+    function sha256(value) {
+      function rightRotate(n, x) { return (x >>> n) | (x << (32 - n)); }
+      const maxWord = Math.pow(2, 32);
+      let result = '';
+      const words = [];
+      const ascii = unescape(encodeURIComponent(value));
+      const bitLength = ascii.length * 8;
+      const initialHash = sha256.h = sha256.h || [];
+      const k = sha256.k = sha256.k || [];
+      let primeCounter = k.length;
+      const isComposite = {};
+      for (let candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+          for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+          initialHash[primeCounter] = (Math.pow(candidate, .5) * maxWord) | 0;
+          k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+        }
+      }
+      const hash = initialHash.slice(0);
+      let message = ascii + '\x80';
+      while (message.length % 64 !== 56) message += '\x00';
+      for (let i = 0; i < message.length; i++) words[i >> 2] |= message.charCodeAt(i) << ((3 - i) % 4) * 8;
+      words[words.length] = (bitLength / maxWord) | 0;
+      words[words.length] = bitLength;
+      for (let j = 0; j < words.length;) {
+        const chunk = words.slice(j, j += 16);
+        const oldHash = hash.slice(0);
+        let working = hash.slice(0, 8);
+        for (let i = 0; i < 64; i++) {
+          const w15 = chunk[i - 15], w2 = chunk[i - 2];
+          const a = working[0], e = working[4];
+          const temp1 = working[7]
+            + (rightRotate(6, e) ^ rightRotate(11, e) ^ rightRotate(25, e))
+            + ((e & working[5]) ^ ((~e) & working[6])) + k[i]
+            + (chunk[i] = i < 16 ? chunk[i] : (chunk[i - 16]
+              + (rightRotate(7, w15) ^ rightRotate(18, w15) ^ (w15 >>> 3))
+              + chunk[i - 7] + (rightRotate(17, w2) ^ rightRotate(19, w2) ^ (w2 >>> 10))) | 0);
+          const temp2 = (rightRotate(2, a) ^ rightRotate(13, a) ^ rightRotate(22, a))
+            + ((a & working[1]) ^ (a & working[2]) ^ (working[1] & working[2]));
+          working = [(temp1 + temp2) | 0].concat(working);
+          working[4] = (working[4] + temp1) | 0;
+          working.pop();
+        }
+        for (let i = 0; i < 8; i++) hash[i] = (working[i] + oldHash[i]) | 0;
+      }
+      for (let i = 0; i < 8; i++) {
+        for (let j = 3; j + 1; j--) {
+          const byte = (hash[i] >> (j * 8)) & 255;
+          result += (byte < 16 ? '0' : '') + byte.toString(16);
+        }
+      }
+      return result;
+    }
+
+    // ── Host ICE candidate polling ─────────────────────────────
+    // The host pushes its ICE candidates into a per-guest buffer; we drain
+    // it with GET /poll-ice and feed each candidate into the peer connection.
+    let icePollTimer = null;
+
+    function startIcePolling() {
+      stopIcePolling();
+      let connectedTicks = 0;
+      const poll = async () => {
+        try {
+          const res = await fetch(
+            signalingUrl + '/poll-ice?guest_id=' + encodeURIComponent(guestId)
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const list = data.candidates || [];
+            for (const c of list) {
+              try {
+                await pc.addIceCandidate({
+                  candidate: c.candidate,
+                  sdpMid: c.sdp_mid,
+                  sdpMLineIndex: c.sdp_mline_index,
+                });
+              } catch (_) { /* candidate may arrive out of order; ignore */ }
+            }
+          }
+        } catch (_) { /* transient network error; retry next tick */ }
+
+        if (pc && (pc.connectionState === 'connected' || pc.connectionState === 'completed')) {
+          connectedTicks++;
+          // Keep polling briefly after connect to catch restarted gathering,
+          // then back off to a slow heartbeat.
+          if (connectedTicks === 6) {
+            if (icePollTimer) clearInterval(icePollTimer);
+            icePollTimer = setInterval(poll, 5000);
+          }
+        }
+      };
+      icePollTimer = setInterval(poll, 400);
+    }
+
+    function stopIcePolling() {
+      if (icePollTimer) { clearInterval(icePollTimer); icePollTimer = null; }
+    }
+
+    const mjpegChunks = new Map();
+    let mjpegObjectUrl = null;
+    function handleMjpeg(msg) {
+      if (h264FirstFrame) return;
+      (async () => {
+        try {
+          const buf = msg.data instanceof Blob ? await msg.data.arrayBuffer()
+                  : msg.data instanceof ArrayBuffer ? msg.data
+                  : await new Blob([msg.data]).arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          const view = new DataView(buf);
+          const isChunked = bytes.length >= 12
+            && bytes[0] === 0x4f && bytes[1] === 0x52 && bytes[2] === 0x42 && bytes[3] === 0x4a;
+          if (!isChunked) {
+            const blob = new Blob([buf], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            if (mjpegObjectUrl) URL.revokeObjectURL(mjpegObjectUrl);
+            mjpegObjectUrl = url;
+            mjpegEl.src = url;
+            isLive = true;
+            lastVideoFrameAt = Date.now();
+            setStatus('live', '正在观看 · 高清画面');
+            clearFirstFrameTimer();
+            showMjpeg();
+            return;
+          }
+          const frameId = view.getUint32(4, false);
+          const total = view.getUint16(8, false);
+          const index = view.getUint16(10, false);
+          if (!total || index >= total) return;
+          let frame = mjpegChunks.get(frameId);
+          if (!frame) { frame = { total, received: 0, chunks: new Array(total) }; mjpegChunks.set(frameId, frame); }
+          if (!frame.chunks[index]) { frame.chunks[index] = bytes.slice(12); frame.received++; }
+          if (frame.received === frame.total) {
+            const size = frame.chunks.reduce((s, c) => s + (c?.length ?? 0), 0);
+            const jpeg = new Uint8Array(size);
+            let o = 0;
+            for (const c of frame.chunks) { if (!c) return; jpeg.set(c, o); o += c.length; }
+            mjpegChunks.delete(frameId);
+            const blob = new Blob([jpeg], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            if (mjpegObjectUrl) URL.revokeObjectURL(mjpegObjectUrl);
+            mjpegObjectUrl = url;
+            mjpegEl.src = url;
+            isLive = true;
+            lastVideoFrameAt = Date.now();
+            setStatus('live', '正在观看 · 高清画面');
+            clearFirstFrameTimer();
+            showMjpeg();
+          }
+        } catch (e) { /* swallow */ }
+      })();
+    }
+
+    // Periodic stats polling (best effort)
+    setInterval(async () => {
+      if (!pc) return;
+      try {
+        const stats = await pc.getStats();
+        let w = null, h = null;
+        stats.forEach((r) => {
+          if (r.type === 'inbound-rtp' && r.kind === 'video') {
+            w = r.frameWidth || w;
+            h = r.frameHeight || h;
+            if (Number.isFinite(r.framesDecoded) && r.framesDecoded > lastDecodedFrames) {
+              lastDecodedFrames = r.framesDecoded;
+              lastVideoFrameAt = Date.now();
+            }
+          }
+        });
+        if (w && h) {
+          resChip.classList.remove('hidden');
+          resVal.textContent = `${w}×${h}`;
+        } else {
+          resChip.classList.add('hidden');
+        }
+      } catch (e) {}
+    }, 1500);
+
+    const notifyLeave = () => {
+      if (!viewerRegistered) return;
+      viewerRegistered = false;
+      try {
+        const url = signalingUrl + '/leave?guest_id=' + encodeURIComponent(guestId);
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url);
+        } else {
+          fetch(url).catch(() => {});
+        }
+      } catch (_) {}
+    };
+
+    const cleanup = () => {
+      intentionallyLeaving = true;
+      clearReconnectTimer();
+      notifyLeave();
+      disposePeerLocally();
+    };
+
+    disconnectBtn.addEventListener('click', () => {
+      cleanup();
+      showToast('已断开连接');
+      setStatus('idle', '已断开');
+      showEnded();
+    });
+
+    const resumeAfterBackground = () => {
+      if (roomClosedByHost || intentionallyLeaving || !activeGuestName || document.hidden) return;
+      videoEl.play().catch(() => {});
+      if (pc?.connectionState === 'connected') {
+        startIcePolling();
+        if (mediaIsMoving()) {
+          restoreLiveUi();
+        } else {
+          setStatus('idle', '正在恢复视频…');
+          scheduleReconnect('从后台返回后视频尚未恢复', 2500);
+        }
+      } else {
+        scheduleReconnect('从后台返回', 1500);
+      }
+    };
+
+    // iOS Safari may emit pagehide/freeze merely because the user switched
+    // apps. Do not send /leave or close WebRTC here; that would turn a normal
+    // background pause into a permanent departure. A real closed/failed peer
+    // is cleaned up by the host, while explicit UI exits still call cleanup().
+    window.addEventListener('pagehide', () => {
+      stopIcePolling();
+      clearDisconnectGrace();
+      clearReconnectTimer();
+    });
+    window.addEventListener('pageshow', resumeAfterBackground);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearDisconnectGrace();
+        clearReconnectTimer();
+      } else {
+        resumeAfterBackground();
+      }
+    });
+    backBtn.addEventListener('click', () => {
+      cleanup();
+      history.length > 1 ? history.back() : (window.location.href = '/');
+    });
+    overlayBack.addEventListener('click', backBtn.click);
+    const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+    const exitFullscreen = async () => {
+      try {
+        if (fullscreenElement()) {
+          const exit = document.exitFullscreen || document.webkitExitFullscreen;
+          await exit?.call(document);
+        } else if (videoEl.webkitDisplayingFullscreen && videoEl.webkitExitFullscreen) {
+          videoEl.webkitExitFullscreen();
+        }
+      } catch (_) {}
+      try { screen.orientation?.unlock?.(); } catch (_) {}
+      document.body.classList.remove('stage-fullscreen');
+    };
+
+    const tryNativeVideoFullscreen = () => new Promise((resolve) => {
+      if (videoEl.classList.contains('hidden') || !videoEl.webkitEnterFullscreen) {
+        resolve(false);
+        return;
+      }
+
+      let settled = false;
+      let timer = null;
+      const finish = (entered) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        videoEl.removeEventListener('webkitbeginfullscreen', onBegin);
+        resolve(entered);
+      };
+      const onBegin = () => finish(true);
+      videoEl.addEventListener('webkitbeginfullscreen', onBegin, { once:true });
+
+      try {
+        videoEl.webkitEnterFullscreen();
+        // Some iPhone Safari versions expose the method but silently refuse
+        // it. Only treat the request as successful after the native event or
+        // after Safari reports that fullscreen is actually being displayed.
+        timer = setTimeout(() => finish(Boolean(videoEl.webkitDisplayingFullscreen)), 420);
+      } catch (_) {
+        finish(false);
+      }
+    });
+
+    const enterFullscreen = async () => {
+      // iPhone Safari only exposes native fullscreen on the <video> element.
+      if (await tryNativeVideoFullscreen()) return;
+
+      const request = stageInner.requestFullscreen || stageInner.webkitRequestFullscreen;
+      if (request) {
+        try {
+          await request.call(stageInner);
+          if (isMobileViewer) await lockLandscapeIfSupported();
+          return;
+        } catch (_) { /* continue with CSS fallback */ }
+      }
+
+      // MJPEG and older iOS versions have no element fullscreen API. This
+      // fallback removes all app chrome and fills the visual viewport.
+      document.body.classList.add('stage-fullscreen');
+      if (isMobileViewer) await lockLandscapeIfSupported();
+      showToast('已进入沉浸观看');
+    };
+
+    const toggleFullscreen = async () => {
+      if (fullscreenElement() || document.body.classList.contains('stage-fullscreen') || videoEl.webkitDisplayingFullscreen) {
+        await exitFullscreen();
+      } else {
+        await enterFullscreen();
+      }
+    };
+
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    fullscreenExit.addEventListener('click', exitFullscreen);
+    const handleFullscreenChange = () => {
+      if (!fullscreenElement()) document.body.classList.remove('stage-fullscreen');
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    videoEl.addEventListener('webkitbeginfullscreen', () => {
+      document.body.classList.remove('stage-fullscreen');
+      void lockLandscapeIfSupported();
+    });
+    videoEl.addEventListener('webkitendfullscreen', () => document.body.classList.remove('stage-fullscreen'));
+
+    // Fullscreen toggle on F
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'f') {
+        void toggleFullscreen();
+      } else if (e.key.toLowerCase() === 'z') {
+        toggleViewMode();
+      } else if (e.key === 'Escape' && (fullscreenElement() || document.body.classList.contains('stage-fullscreen'))) {
+        void exitFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>

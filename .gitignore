@@ -1,0 +1,44 @@
+# Rust
+/target/
+/artifacts/
+**/*.rs.bk
+**/.build/
+
+# Node
+node_modules/
+dist/
+.npm
+*.tgz
+
+# Tauri
+src-tauri/target/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Existing
+path/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local agent/workspace state
+/.codex/
+/.workbuddy/
+/src-tauri/.cargo/
+/src-tauri/gen/
+
+# Local signing material and generated bundles
+*.p12
+*.provisionprofile
+*.mobileprovision
+*.dmg

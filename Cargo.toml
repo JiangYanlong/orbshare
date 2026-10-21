@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "src-tauri",
+    "crates/orb-core",
+    "crates/orb-signaling",
+    "crates/orb-discovery",
+    "crates/orb-webrtc",
+    "crates/orb-capture",
+    "crates/orb-policy",
+    "crates/orb-encoder",
+    "crates/orb-media",
+]
+
+# The capture crate runs per-pixel BGRA→YUV→NV12 conversion loops that are
+# ~20-50x slower without optimization. In `tauri build --debug` this throttled
+# the whole capture→encode pipeline to ~1fps, starving late-joining viewers
+# of keyframes. Optimize just this crate in dev builds.
+[profile.dev.package.orb-capture]
+opt-level = 2
+
+# The WebRTC send path (RTP packetization + SRTP AES-GCM encryption of
+# 100-500KB keyframes) is crypto/CPU heavy and runs unoptimized in dev
+# builds, capping the h264 pump at ~2fps. Optimize the heavy third-party
+# crates so debug builds stay usable for real streaming verification.
+[profile.dev.package.webrtc]
+opt-level = 2
+
+[profile.dev.package.webrtc-srtp]
+opt-level = 2

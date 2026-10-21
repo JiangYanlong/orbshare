@@ -1,0 +1,13 @@
+[package]
+name = "orb-signaling"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+orb-core = { path = "../orb-core" }
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+serde_json = "1"
+tracing = "0.1"
+sha2 = "0.10"
