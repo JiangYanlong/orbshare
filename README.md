@@ -20,6 +20,17 @@ OrbShare 在发起端本机完成屏幕采集、硬件编码、信令和观看�
 > [!IMPORTANT]
 > 项目仍处于 `0.x` 活跃开发阶段。当前优先保证 macOS 发起共享和现代浏览器观看体验，不应将其视为已经完成企业级 SLA 验证的会议系统。
 
+## 界面预览
+
+![OrbShare 发起会议与画质设置](docs/images/screenshots/host-meeting-settings-en.png)
+
+<p align="center">
+  <img src="docs/images/screenshots/meeting-invitation-qr-en.png" alt="OrbShare 二维码邀请" width="62%" />
+  <img src="docs/images/screenshots/mobile-viewer-portrait-zh.jpg" alt="OrbShare 手机浏览器观看" width="24%" />
+</p>
+
+更多创建会议、共享来源、成员管理、录制和手机观看截图见 [完整截图集](docs/screenshots.md)。
+
 ## 已实现功能
 
 - 共享整个桌面或指定应用窗口，并可在会议中切换来源

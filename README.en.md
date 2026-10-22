@@ -20,6 +20,17 @@ OrbShare captures the screen, performs hardware encoding, hosts signaling, and s
 > [!IMPORTANT]
 > OrbShare is an actively developed `0.x` project. The current priority is reliable macOS hosting and modern-browser viewing; it should not yet be treated as an enterprise meeting product with a validated SLA.
 
+## Screenshots
+
+![OrbShare meeting setup and quality settings](docs/images/screenshots/host-meeting-settings-en.png)
+
+<p align="center">
+  <img src="docs/images/screenshots/meeting-invitation-qr-en.png" alt="OrbShare QR invitation" width="62%" />
+  <img src="docs/images/screenshots/mobile-viewer-portrait-zh.jpg" alt="OrbShare mobile browser viewer" width="24%" />
+</p>
+
+See the [full screenshot gallery](docs/screenshots.md) for hosting, source selection, participant controls, recording, and mobile viewing.
+
 ## Implemented features
 
 - Share a full desktop or an application window and switch sources during a meeting
